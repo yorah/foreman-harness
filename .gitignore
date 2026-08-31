@@ -1,0 +1,10 @@
+# Harness: regenerable review diff packages. Everything else the harness writes is tracked
+# on purpose — a ledger a second person cannot read is not a ledger.
+*.diff
+
+# SDD scratch: briefs, reports, reviews and the ledger for a running plan.
+/.superpowers/
+
+# Machine-specific: a local absolute path that differs per contributor's checkout. Committing
+# it would make every contributor fight over this line on every pull; each generates their own.
+.claude/settings.local.json

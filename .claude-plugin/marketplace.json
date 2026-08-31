@@ -1,0 +1,16 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "foreman",
+  "description": "A three-tier development harness: a program manager that coordinates, phase sessions that execute, and task subagents that write the code.",
+  "owner": {
+    "name": "yorah"
+  },
+  "plugins": [
+    {
+      "name": "foreman",
+      "description": "Program-manager orchestration with spec-driven, subagent-executed phases and a gate chain that catches regressions by mechanism.",
+      "source": "./",
+      "category": "workflow"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+# foreman-harness — program state
+
+The program manager's working memory, read at the start of every session. **Kept short
+deliberately** — completed phases live in `HISTORY.md`, standing decisions in `RULINGS.md`,
+time-gated checks in `DEFERRED.md`.
+
+Last updated 2026-08-31.
+
+## Phases
+
+| Phase | Owner | Branch | Status | Next action |
+|---|---|---|---|---|
+
+One row per phase, edited in place as its status changes across the phase's lifetime — never
+appended to as a second row for the same phase. This table is parsed by
+`foreman-state` — keep the `Phase` and `Branch` column headers spelled exactly as they
+are. The script resolves them by name; other columns and their order
+are yours. Two rows naming the same phase make the branch unknowable, and the script refuses
+rather than guess which one is current.
+
+Statuses: `planned`, `executing`, `gates`, `awaiting rebase`, `merged`, and the three a phase can
+halt on — `blocked`, `deferred`, `unverified`. The last three are what a phase's own summary
+reports; record the one you were told rather than leaving a halted phase reading `executing`,
+which is the same untruth as a ledger that says `in-progress` at a stop.
+
+## Next action
+
+Nothing scheduled yet. Run `/program` and refine the first spec.
+
+## Open rulings
+
+Rulings about the present. When one stops being about the present, move it to `RULINGS.md`.

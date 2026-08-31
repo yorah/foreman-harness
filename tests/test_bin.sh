@@ -1,0 +1,105 @@
+#!/usr/bin/env bash
+set -uo pipefail
+source "$FOREMAN_ROOT/tests/lib_assert.sh"
+
+# The bin/ wrappers exist because $CLAUDE_PLUGIN_ROOT is NOT exported into the Bash tool's
+# environment, which task 10's dogfood established by installing the plugin and running it: a
+# call site written as "$CLAUDE_PLUGIN_ROOT/scripts/resolve-gate.sh" expands to
+# "/scripts/resolve-gate.sh" and fails. Claude Code does put <plugin-root>/bin on PATH, so a
+# wrapper there is callable by bare name with no variable and no path.
+#
+# This is the file that tests the mechanism itself. Every other test asserts that the SKILLS
+# call the wrappers; only this one asserts the wrappers work.
+
+b="$FOREMAN_ROOT/bin"
+
+for w in foreman-gate foreman-brief foreman-baseline foreman-state foreman-root; do
+  if [ -x "$b/$w" ]; then _ok; else fail "bin/$w is missing or not executable"; fi
+done
+
+# Invariant 2: every executable script carries the shebang and strict mode.
+for w in foreman-gate foreman-brief foreman-baseline foreman-state foreman-root; do
+  head1="$(head -1 "$b/$w" 2>/dev/null || true)"
+  assert_eq '#!/usr/bin/env bash' "$head1" "bin/$w has the bash shebang"
+  assert_contains "$(cat "$b/$w" 2>/dev/null || true)" 'set -euo pipefail' \
+    "bin/$w sets strict mode"
+done
+
+# --- foreman-root prints the plugin root ----------------------------------
+assert_eq "$FOREMAN_ROOT" "$("$b/foreman-root" 2>/dev/null || true)" \
+  "foreman-root prints the plugin's absolute root"
+
+# --- the wrappers reach their scripts and keep the exit-code contract ------
+# 0 success, 1 a definite negative verdict, 2 cannot determine. A wrapper that swallowed or
+# remapped its script's exit code would make every caller's branching wrong.
+# A purpose-built repo, not this one and not $HOME: the settings precedence chain reads the
+# repo's own .claude/settings.json before any user-level file, so this asserts the wrapper's
+# plumbing rather than whatever effort the machine running the suite happens to be set to.
+gate_repo="$(mktemp -d)"; mkdir -p "$gate_repo/.claude"; git -C "$gate_repo" init -q
+printf '%s\n' '{"effortLevel":"high"}' > "$gate_repo/.claude/settings.json"
+assert_exit 0 "foreman-gate passes a compliant model and effort" -- \
+  "$b/foreman-gate" --model claude-opus-5 --repo "$gate_repo"
+# Both directions: the same wrapper against the same repo must refuse once the effort drops,
+# or exit 0 above would only prove the wrapper runs, not that its verdict reaches the caller.
+printf '%s\n' '{"effortLevel":"medium"}' > "$gate_repo/.claude/settings.json"
+assert_exit 1 "foreman-gate refuses below-high effort" -- \
+  "$b/foreman-gate" --model claude-opus-5 --repo "$gate_repo"
+rm -rf "$gate_repo"
+assert_exit 2 "foreman-state exits 2 for an unknown phase" -- \
+  "$b/foreman-state" --repo "$FOREMAN_ROOT" --phase no-such-phase
+assert_exit 2 "foreman-baseline exits 2 for a missing policy" -- \
+  "$b/foreman-baseline" --policy "$FOREMAN_ROOT/no-such-policy.md" --count 5
+assert_exit 2 "foreman-brief exits 2 for a relative plan path" -- \
+  "$b/foreman-brief" --plan relative/path --task 1 --phase-dir "$FOREMAN_ROOT" \
+  --worktree "$FOREMAN_ROOT"
+
+# --- the root is resolved from the wrapper, not from the caller ------------
+# Both directions. `readlink -f` is what makes this true, and the failure it prevents is a
+# wrapper invoked through a symlink on PATH resolving its root to the symlink's directory.
+out_elsewhere="$(cd / && "$b/foreman-root" 2>/dev/null || true)"
+assert_eq "$FOREMAN_ROOT" "$out_elsewhere" \
+  "foreman-root is independent of the caller's working directory"
+
+link_dir="$(mktemp -d)"
+ln -s "$b/foreman-root" "$link_dir/foreman-root"
+out_via_link="$(cd / && "$link_dir/foreman-root" 2>/dev/null || true)"
+rm -rf "$link_dir"
+assert_eq "$FOREMAN_ROOT" "$out_via_link" \
+  "foreman-root resolves through a symlink to the real plugin root"
+
+# --- the runner's baseline gate -------------------------------------------
+# [M-5]/[I-3]: validating POLICY.md's baseline against the suite's real total cannot live inside
+# a test file -- a test cannot know the suite's own total without re-running it -- so it lives in
+# tests/run.sh. That makes it the one piece of the runner with logic of its own, and it needs a
+# test.
+#
+# The runner is invoked against a ONE-FILE fixture directory via FOREMAN_TESTS_DIR, not against
+# this suite. The first version of this test ran the real suite nested, which re-executed this
+# file and spawned three more runs each time; the env-var guard that stopped that could itself be
+# switched off from outside, silently dropping these three assertions while the run still
+# reported green. A fixture directory removes the recursion instead of guarding against it.
+rr="$FOREMAN_ROOT/tests/run.sh"
+fix_dir="$(mktemp -d)"; mkdir -p "$fix_dir/tests"
+cat > "$fix_dir/tests/test_fixture.sh" <<'FIXTURE'
+#!/usr/bin/env bash
+set -uo pipefail
+source "$FOREMAN_ROOT/tests/lib_assert.sh"
+assert_eq "a" "a" "fixture assertion 1"
+assert_eq "b" "b" "fixture assertion 2"
+FIXTURE
+printf '%s\n' '# Program policy' '## Baseline' 'baseline-count: 999' > "$fix_dir/high.md"
+printf '%s\n' '# Program policy' '## Baseline' 'baseline-count: 1'   > "$fix_dir/low.md"
+printf '%s\n' 'no baseline recorded here'                            > "$fix_dir/none.md"
+rt() { env FOREMAN_TESTS_DIR="$fix_dir/tests" FOREMAN_POLICY="$fix_dir/$1.md" "${@:2}" bash "$rr"; }
+
+# The fixture run produces 2 passing assertions. Below the recorded baseline is a definite
+# negative verdict: exit 1, even with zero failures.
+assert_exit 1 "run.sh fails when the run is below POLICY's baseline" -- rt high
+# Above it the gate is silent. Without this direction the one above would pass on a runner that
+# simply always failed.
+assert_exit 0 "run.sh passes when the run is above POLICY's baseline" -- rt low
+# Cannot-determine is not a regression: an unreadable baseline warns, and must never gate.
+assert_exit 0 "run.sh does not gate on a policy with no baseline" -- rt none
+# [M-4] The documented escape hatch must actually work, or it is a comment, not a feature.
+assert_exit 0 "FOREMAN_SKIP_BASELINE bypasses the gate" -- rt high env FOREMAN_SKIP_BASELINE=1
+rm -rf "$fix_dir"

@@ -1,0 +1,39 @@
+# docs/dev
+
+The design record for foreman-harness. Tracked in git — a second person, and a future
+session, can both read it.
+
+Each directory has **one audience**. Never read a whole directory; read the file you were
+pointed at. This structure exists so that a session working on one component does not load the
+whole system.
+
+| Path | Contents | Who reads it |
+|---|---|---|
+| `specs/` | design of record — what and why | anyone implementing against a design |
+| `plans/<slug>/` | `README.md` for shared constraints, `task-N.md` per task | the session executing a task |
+| `reports/` | one file per session — the audit trail | whoever comes next |
+| `reference/` | measurements and calibration findings | whoever needs a measured number |
+| `CONTEXT.md` | standing facts that outlive any one plan | any session, when pointed at it |
+| `backlog.md` | deferred minors, tracked | the program manager, and any phase that can absorb one |
+| `program/STATE.md` | current state only, short by design | the program manager, every session |
+| `program/POLICY.md` | gates, baseline, boundaries, invariants | all three tiers |
+| `program/RULINGS.md` | standing decisions | the program manager; a session when told |
+| `program/DEFERRED.md` | checks needing elapsed time or an event | the program manager, when one comes due |
+| `program/HISTORY.md` | completed phases | rarely |
+| `program/phases/<slug>/` | kickoff, ledger, briefs, reports, reviews | that phase's session |
+
+Naming for `specs/` and `plans/`: `YYYY-MM-DD-<topic>`. The date is when the document was
+written, not when the work finishes. One spec may spawn several plans.
+
+**A plan is a directory.** `README.md` carries what every task shares; `task-N.md` carries one
+task. A session opens one file.
+
+**Cite the smallest file that answers the question, or a symbol name to grep for — never a
+line range.** A line range in a file under active edit goes stale within a day.
+
+## Who writes what
+
+One writer per file. `program/STATE.md`, `RULINGS.md`, `DEFERRED.md`, `HISTORY.md`, `POLICY.md`
+and every `kickoff.md` are the program manager's, on the default branch. A phase's `state.md`,
+its task artifacts and its reports are that phase's, on its own branch — the program manager
+reads them with `foreman-state`, which never dirties this checkout.

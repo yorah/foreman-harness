@@ -1,0 +1,9 @@
+{
+  "name": "foreman",
+  "description": "A three-tier development harness: a program manager that coordinates, phase sessions that execute, and task subagents that write the code. Distilled from three projects run this way.",
+  "version": "0.1.0",
+  "author": {
+    "name": "yorah"
+  },
+  "license": "MIT"
+}

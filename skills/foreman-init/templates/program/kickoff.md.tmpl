@@ -1,0 +1,47 @@
+# {{PHASE_NAME}}
+
+## First — `foreman-phase` Step 1a, then Step 1b's `EnterWorktree`
+
+Record `<main-checkout>` (the directory `/phase` was invoked from — `git rev-parse
+--show-toplevel`, not a worktree) and `<default>` (the default branch) before doing anything
+else — they are needed at gate 6 and are hard to reconstruct once inside a worktree. Then:
+
+`EnterWorktree(name: "{{PHASE_SLUG}}")` — branches from `origin/<default>`.
+
+**Your branch is `feat/{{PHASE_SLUG}}`.** The program manager chose it and has already written
+it into `STATE.md`, which is how a running phase's ledger is found. If the worktree tool creates
+a branch under a different name, rename it to this one (`git -C <worktree> branch -m
+feat/{{PHASE_SLUG}}`) rather than reporting a different name back — the name is an input here,
+not an output.
+
+## Context
+
+{{CONTEXT}}
+
+## Read first
+
+- `{{PLAN_PATH}}/README.md` — constraints and the task table
+- `docs/dev/program/POLICY.md` — gate commands, baseline, trust boundaries, invariants
+- {{SPEC_REF}} — the requirements this argues from
+
+Read nothing else until a task requires it. **Do not read the plan's task bodies** — generate
+briefs with `foreman-brief`.
+
+## Rulings that must not be relitigated
+
+{{RULINGS}}
+
+## Method
+
+`foreman-phase`. Subagent-driven execution against the plan, then the gate chain in
+`references/gate-chain.md`.
+
+## Report back
+
+Write `docs/dev/program/phases/{{PHASE_SLUG}}/state.md` as you go and commit it — the program
+manager reads it off your branch.
+
+End with a summary under 150 words: status, commit range, gate results, open Minors, what
+remains uncovered. The human pastes it to the program manager, so it must stand alone.
+
+**Model** {{MODEL}}. **Effort** {{EFFORT}}.

@@ -1,0 +1,35 @@
+{
+  "enabledPlugins": {
+    "foreman@foreman": true,
+    "superpowers@claude-plugins-official": true,
+    "fable@fable-method": true,
+    "claude-md-management@claude-plugins-official": true
+  },
+  "extraKnownMarketplaces": {
+    "fable-method": {
+      "source": {
+        "source": "github",
+        "repo": "Sahir619/fable-method"
+      }
+    }
+  },
+  "worktree": {
+    "baseRef": "fresh"
+  },
+  "effortLevel": "high",
+  "permissions": {
+    "allow": [
+      "Bash(bash tests/run.sh)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(foreman-gate:*)",
+      "Bash(foreman-brief:*)",
+      "Bash(foreman-baseline:*)",
+      "Bash(foreman-state:*)",
+      "Bash(foreman-root)"
+    ]
+  }
+}

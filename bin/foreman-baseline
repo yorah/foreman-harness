@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# Thin wrapper so a skill can invoke this by bare name. Claude Code puts <plugin-root>/bin on
+# PATH, but does NOT export $CLAUDE_PLUGIN_ROOT into the Bash tool's environment: a call site
+# written as "$CLAUDE_PLUGIN_ROOT/scripts/baseline-check.sh" expands to "/scripts/baseline-check.sh"
+# and fails. readlink -f resolves this file through any symlink, so the root comes from where
+# the wrapper actually is, not from the caller's directory or an unset variable.
+root="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
+exec "$root/scripts/baseline-check.sh" "$@"

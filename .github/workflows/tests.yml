@@ -1,0 +1,29 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  suite:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The suite's whole claim is that it needs bash, git and jq and nothing else. Assert that
+      # here rather than trusting the runner image: if a future image drops one, the failure
+      # should name the missing dependency instead of surfacing as a puzzling test error.
+      - name: Check dependencies
+        run: |
+          for dep in bash git jq; do
+            command -v "$dep" >/dev/null || { echo "missing dependency: $dep" >&2; exit 1; }
+          done
+          bash --version | head -1
+          jq --version
+
+      # run.sh is the only gate command. It scores the run itself and then checks the total
+      # against the baseline recorded in docs/dev/program/POLICY.md, so a run that silently
+      # loses assertions fails here even with zero failing tests.
+      - name: Run the suite
+        run: bash tests/run.sh
