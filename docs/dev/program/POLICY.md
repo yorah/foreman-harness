@@ -105,9 +105,14 @@ a plan and its spec disagree, the spec wins.
 
 - Phase branches base on `origin/main` (`worktree.baseRef: fresh`).
 - On completion: rebase, **re-run gate 1 in full on the rebased tree**, merge, push.
-- Escalate to a pull request instead of a direct merge: never, for now — this is a
-  single-operator repository and a phase merges to `main` directly after its gates. Revisit the
-  moment a second person commits here.
+- Escalate to a pull request instead of a direct merge: **always**, since 2026-09-02 (spec
+  D5 of `docs/dev/specs/2026-09-02-program-layer-merge.md`, ruling in `RULINGS.md`). After the
+  rebase and the full gate-1 re-run, a phase pushes its branch and opens the pull request with
+  `gh pr create`, the gate evidence in its body, and stops. The program manager merges after its
+  probe. Opening that pull request is granted here as part of routine phase integration; it is
+  not a fresh outward-facing act needing its own `AUTH:` line. (Until this date the rule was
+  "never, for now — single operator"; the harness now edits itself, so a second read of every
+  diff is the point.)
 - Force-push: never.
 
 ## Model table
