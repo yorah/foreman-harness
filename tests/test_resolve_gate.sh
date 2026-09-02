@@ -6,9 +6,13 @@ gate="$FOREMAN_ROOT/scripts/resolve-gate.sh"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 
-# A fake repo and a fake HOME, so the chain is fully controlled.
+# A fake repo and a fake user config dir, so the chain is fully controlled. The user tier is
+# steered through CLAUDE_CONFIG_DIR, the variable Claude Code itself honours, and never by
+# redirecting HOME: on a machine where `jq` is a tool-manager shim (mise, asdf), the shim
+# resolves its binary through HOME, so a fake HOME turns every gate call into an empty result
+# and 88 assertions here go red for a reason that has nothing to do with the gate.
 mkdir -p "$tmp/repo/.claude" "$tmp/home/.claude"
-export HOME="$tmp/home"
+export CLAUDE_CONFIG_DIR="$tmp/home/.claude"
 
 write_user()    { printf '%s\n' "{\"effortLevel\":\"$1\"}" > "$tmp/home/.claude/settings.json"; }
 write_project() { printf '%s\n' "{\"effortLevel\":\"$1\"}" > "$tmp/repo/.claude/settings.json"; }
@@ -121,13 +125,13 @@ assert_eq "unknown" "$(run opus | jq -r .verdict)" \
   "malformed JSON at local tier is unknown, not a fall-through pass"
 assert_eq "2" "$(code opus)" "malformed JSON at local tier exits 2"
 
-# --- fix round 1: unset HOME must not break the chain for repo-scoped tiers
+# --- fix round 1: no user tier at all must not break the chain for repo-scoped tiers
 clear_all; write_project high
 (
-  unset HOME
+  unset HOME CLAUDE_CONFIG_DIR
   assert_eq "pass" "$(run opus | jq -r .verdict)" \
-    "HOME unset still resolves a valid project-tier effort"
-  assert_eq "0" "$(code opus)" "HOME unset with a valid project effort still exits 0"
+    "HOME and CLAUDE_CONFIG_DIR unset still resolves a valid project-tier effort"
+  assert_eq "0" "$(code opus)" "no user tier with a valid project effort still exits 0"
 )
 
 # --- fix round 2: file-level brokenness ends the search too, not just a broken value at a
@@ -280,3 +284,39 @@ assert_eq "refuse" "$(printf '%s' "$omitted_out" | jq -r .verdict)" \
   "--repo omitted still resolves via \$PWD and refuses on the project's low effort"
 assert_contains "$(printf '%s' "$omitted_out" | jq -r .effort_source)" "repo/.claude/settings.json" \
   "--repo omitted reads the project settings, not the user's"
+
+# --- phase A task 1: the user tier is CLAUDE_CONFIG_DIR first, then $HOME/.claude -----------
+# Gate level: the file that answered is the CLAUDE_CONFIG_DIR one, attributed through
+# effort_source, so a chain that silently read $HOME's file cannot pass by coincidence of values.
+clear_all; write_user high
+assert_contains "$(run opus | jq -r .effort_source)" "$tmp/home/.claude/settings.json" \
+  "the user tier that answered is the CLAUDE_CONFIG_DIR file"
+
+# Chain level: foreman_settings_chain is a pure path printer, so its precedence and fallback are
+# asserted on its output directly, in a subshell with a controlled environment. This is
+# deliberately NOT done by pointing the gate at a redirected HOME: that is the shim problem the
+# top of this file describes, and it would make these assertions fail on exactly the machines
+# they exist to protect.
+chain_third() {  # chain_third <CLAUDE_CONFIG_DIR value or -unset-> <HOME value or -unset->
+  (
+    if [ "$1" = "-unset-" ]; then unset CLAUDE_CONFIG_DIR; else export CLAUDE_CONFIG_DIR="$1"; fi
+    if [ "$2" = "-unset-" ]; then unset HOME; else HOME="$2"; fi
+    source "$FOREMAN_ROOT/scripts/lib.sh"
+    foreman_settings_chain /r | sed -n '3p'
+  )
+}
+assert_eq "/cfg/settings.json" "$(chain_third /cfg /h)" \
+  "CLAUDE_CONFIG_DIR names the user tier when set, even with HOME set"
+assert_eq "/h/.claude/settings.json" "$(chain_third -unset- /h)" \
+  "without CLAUDE_CONFIG_DIR the user tier is HOME/.claude/settings.json"
+assert_eq "/h/.claude/settings.json" "$(chain_third '' /h)" \
+  "an empty CLAUDE_CONFIG_DIR falls back to HOME rather than yielding /settings.json"
+assert_eq "" "$(chain_third -unset- -unset-)" \
+  "with neither variable the chain has no user tier and still prints the two repo tiers"
+
+# No test file in this suite may redirect HOME at the top level, the shape the old fixture had.
+# The reason is the shim problem described at the top of this file; the check is here so the
+# next fixture that needs a controlled user tier is steered to CLAUDE_CONFIG_DIR by a red
+# assertion rather than by a code review.
+assert_eq "" "$(grep -lE '^export HOME=' "$FOREMAN_ROOT"/tests/test_*.sh 2>/dev/null || true)" \
+  "no test file redirects HOME (use CLAUDE_CONFIG_DIR for the user tier)"

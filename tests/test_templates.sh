@@ -310,10 +310,10 @@ assert_eq "Sahir619/fable-method" \
   "settings.json.tmpl's fable-method marketplace names the right repo"
 
 # effortLevel: resolve-gate.sh walks .claude/settings.local.json, then .claude/settings.json,
-# then $HOME/.claude/settings.json, and presence at any tier ends the search. Without this key
-# a generated repo's own settings.json defines nothing, so the search falls through to whatever
-# effortLevel happens to be in the operator's home directory -- the gate's verdict then depends
-# on who is running the session, not on the repository.
+# then ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/settings.json, and presence at any tier ends the
+# search. Without this key a generated repo's own settings.json defines nothing, so the search
+# falls through to whatever effortLevel happens to be in the operator's own user settings -- the
+# gate's verdict then depends on who is running the session, not on the repository.
 assert_eq "high" "$(printf '%s' "$rendered_full" | jq -r '.effortLevel' 2>/dev/null)" \
   "settings.json.tmpl sets effortLevel so the repo answers resolve-gate.sh for itself"
 

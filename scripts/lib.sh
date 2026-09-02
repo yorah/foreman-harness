@@ -20,16 +20,24 @@ foreman_repo_root() {
 }
 
 # foreman_settings_chain <repo-root> — settings paths, most specific first.
-# The user-tier path is only emitted when $HOME is set and non-empty, and it is emitted from a
-# separate printf than the repo-scoped paths, so an unset $HOME never prevents the repo-scoped
-# paths from being produced (a bare, unconditional "$HOME/..." argument would abort the whole
-# printf under a caller's `set -u`, silently losing every path — not just the HOME one).
+# The user tier is the settings file in the directory Claude Code itself reads its user-level
+# configuration from: $CLAUDE_CONFIG_DIR when that is set and non-empty, else $HOME/.claude. It
+# is emitted only when one of the two is set, and from a separate printf than the repo-scoped
+# paths, so an environment with neither never prevents the repo-scoped paths from being produced
+# (a bare, unconditional "$HOME/..." argument would abort the whole printf under a caller's
+# `set -u`, silently losing every path, not just the user one). Tests steer this tier through
+# CLAUDE_CONFIG_DIR, never by redirecting HOME: a redirected HOME breaks a `jq` served by a
+# tool-manager shim, which resolves its binary through HOME.
 foreman_settings_chain() {
   printf '%s\n' \
     "$1/.claude/settings.local.json" \
     "$1/.claude/settings.json"
-  if [ -n "${HOME:-}" ]; then
-    printf '%s\n' "$HOME/.claude/settings.json"
+  local user_dir="${CLAUDE_CONFIG_DIR:-}"
+  if [ -z "$user_dir" ] && [ -n "${HOME:-}" ]; then
+    user_dir="$HOME/.claude"
+  fi
+  if [ -n "$user_dir" ]; then
+    printf '%s\n' "$user_dir/settings.json"
   fi
 }
 
