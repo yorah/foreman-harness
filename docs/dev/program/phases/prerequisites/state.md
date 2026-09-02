@@ -5,7 +5,7 @@ branch: feat/prerequisites
 baseline: 610 at cc489e9a0f0be85829ba288cf089ba28037fdcbb
 tasks:
   - {n: 1, model: opus, effort: high, status: passed, commits: "13dce8e..0c6f90d", verdict: "Spec ✅ / Quality Approved", minors: [T1-M4, T1-M5]}
-  - {n: 2, model: sonnet, effort: medium, status: pending, commits: "", verdict: "", minors: []}
+  - {n: 2, model: sonnet, effort: medium, status: in-progress, commits: "", verdict: "", minors: []}
   - {n: 3, model: sonnet, effort: medium, status: pending, commits: "", verdict: "", minors: []}
   - {n: 4, model: opus, effort: high, status: pending, commits: "", verdict: "", minors: []}
 ---
