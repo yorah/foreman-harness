@@ -262,3 +262,19 @@ Critical (spec §9.6) and it was right: a deferral nobody can read is a deletion
   clause and its `[T-PLAN]` pointer in all five files, so it can no longer be dropped silently.
   `[T-PLAN]` itself stays open: the code blocks are still unrefreshed, and the banner is what
   stands in for that.
+
+### Found while dispatching phase A (2026-09-02)
+
+- [ ] **[DIST-2] Every slash command in shipped prose is written bare (`/phase`, `/program`,
+  `/program-status`, `/foreman-init`); the installed plugin exposes them namespaced as
+  `/foreman:phase`, `/foreman:program`, `/foreman:program-status`, `/foreman:foreman-init`.**
+  Found by launching, not by reading: `/phase <kickoff>` in a session inside this repository
+  returned `Unknown command: /phase`, while the skill listing names `foreman:phase`. Same class as
+  `$CLAUDE_PLUGIN_ROOT`: invisible from inside the repository, fatal on install. Touch points
+  (bare mentions per file): `CLAUDE.md.tmpl` 8, this repository's `CLAUDE.md` 8,
+  `foreman-program/SKILL.md` 7 (including the launch block it prints), `README.md` 6,
+  `foreman-init/SKILL.md` 4, `foreman-phase/SKILL.md` 2, `gate-chain.md` 1, and one each in
+  `kickoff.md.tmpl`, `STATE.md.tmpl`, `POLICY.md.tmpl`. Fix: namespace every mention and add an
+  assertion that no bare form survives in `skills/`, `commands/`, templates, `README.md`. Skills
+  and templates, so an Opus reviewer. Candidate for phase B, which already rewrites the same
+  files for the layout change.

@@ -16,7 +16,7 @@ a phase merges the plugin is updated before the next launches (§10, and `DEFERR
 
 | Phase | Owner | Branch | Status | Next action |
 |---|---|---|---|---|
-| prerequisites | yorah | feat/prerequisites | planned | launch `/phase docs/dev/program/phases/prerequisites/kickoff.md` at Opus, high |
+| prerequisites | yorah | feat/prerequisites | planned | launch `/foreman:phase docs/dev/program/phases/prerequisites/kickoff.md` at Opus, high |
 
 One row per phase, edited in place as its status changes across the phase's lifetime — never
 appended to as a second row for the same phase. This table is parsed by
