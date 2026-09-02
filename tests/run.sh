@@ -4,6 +4,19 @@ set -uo pipefail
 FOREMAN_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 export FOREMAN_ROOT
 
+# Every git command the suite runs, directly or through a script under test, sees THIS global
+# configuration and not the operator's. A global config that mandates signed commits with a key
+# this process cannot reach fails every scratch commit in test_phase_state.sh, twelve assertions
+# on the machine this was written on, for a reason that is not in the tree. The identity is a
+# placeholder so fixtures need not set one; the default branch is pinned so `git init` output is
+# the same on every machine.
+FOREMAN_GIT_CONFIG="$(mktemp)"
+printf '%s\n' '[user]' '	name = foreman-tests' '	email = foreman-tests@example.invalid' \
+  '[commit]' '	gpgsign = false' '[tag]' '	gpgsign = false' \
+  '[init]' '	defaultBranch = main' > "$FOREMAN_GIT_CONFIG"
+export GIT_CONFIG_GLOBAL="$FOREMAN_GIT_CONFIG" GIT_CONFIG_NOSYSTEM=1
+trap 'rm -f "$FOREMAN_GIT_CONFIG"' EXIT
+
 total_pass=0
 total_fail=0
 files=0
