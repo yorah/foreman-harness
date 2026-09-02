@@ -392,15 +392,22 @@ runs under the *current* harness, since the new one does not exist yet.
 
 | Phase | Delivers | Why this position |
 |---|---|---|
-| A. prerequisites | test fixtures isolate git config (`GIT_CONFIG_GLOBAL`, `commit.gpgsign=false`) so the suite is green under a mandatory-signing global config; `[DEP-1]` fallbacks or a Step 0 check for `superpowers` and `fable`; `[DIST-1]` marketplace source switched to `github` and `settings.local.json` retired | everything after this is measured against a green suite and an installable plugin |
+| A. prerequisites | test fixtures isolate the environment: git config (`GIT_CONFIG_GLOBAL` pinned by the runner, `commit.gpgsign=false`) so the suite is green under a mandatory-signing global config, and the user settings tier read through `${CLAUDE_CONFIG_DIR:-$HOME/.claude}` (the directory Claude Code itself honours) so that no test redirects `HOME`, which breaks a `jq` served by a tool-manager shim; `[DEP-1]` a dependency check at each skill's entry that stops cleanly when a required skill is absent; `[DIST-1]` marketplace source switched to `github` and `settings.local.json` retired | everything after this is measured against a green suite and an installable plugin |
 | B. roots and layout | `foreman_roots`, `foreman.json`, the §4.1 layout in templates and manifest, `.foreman/` bootstrap in `foreman-init`, `foreman-state` and `program-status` on `--work-root`, retirement of the `git show` path and its triage tables, `docs/dev/README.md` and `CLAUDE.md` updated | single mode is the smallest end-to-end change and every later phase writes into this layout |
 | C. planning in the phase | `foreman-planner`, kickoff template as §5.1, `foreman-phase` Step 2 as §5.3, plan writing removed from `foreman-program`, `foreman-kickoff-lint` | changes the seam between the PM and the phase; needs B's paths |
 | D. program layer | multi mode, `foreman.local.json`, the program interview and mission refinement, `CONTRACTS.md` and design phases, `foreman-sweep`, verdict-only investigation returns | everything `em-assistant` had that is not an integration |
 | E. adapters | the three seams in `foreman-program`, `references/adapters/atlassian.md`, `dispatched` owner and its lint rule, `status.publish` triggers | last because it is optional and the seams need D's program layer to attach to |
 | F. migration (deferred) | `em-assistant`'s live programs moved to multi mode; the skill folder retired | not part of this spec's plans; recorded so it is not forgotten |
 
-Phase B touches `scripts/lib.sh` and `MANIFEST.tsv`, both declared trust boundaries in
-`POLICY.md`, so B runs at Opus with an Opus reviewer.
+Phases A and B both touch declared trust boundaries in `POLICY.md`: A changes the settings
+chain in `scripts/lib.sh` and removes a `MANIFEST.tsv` row, B changes both files again. Both
+run at Opus with an Opus reviewer.
+
+Phase sessions run the **installed** plugin, not the checkout. After each phase merges, the
+plugin is updated (`claude plugin update foreman@foreman`, or a reinstall) before the next
+phase is launched, and the PM session is restarted so that it too runs the new skill. This
+matters most after B, which moves this repository's own state files: a PM still running the
+pre-B skill would look for `STATE.md` where it no longer is.
 
 ## 11. Rulings taken while writing
 
@@ -426,7 +433,9 @@ Observations, not intentions. Each is either mechanical (belongs in a plan as a 
 test) or human (a check a person makes once).
 
 1. **Mechanical.** `bash tests/run.sh` is green on a machine whose global git config sets
-   `commit.gpgsign=true` with no signing agent available. Today it fails 12 assertions there.
+   `commit.gpgsign=true` with no signing agent available, and on a machine where `jq` on
+   `PATH` is a tool-manager shim that resolves its binary through `$HOME`. Today the first
+   fails 12 assertions and the second 88, all in the resolve-gate tests.
 2. **Mechanical.** After a single-mode `foreman-init` on a scratch repository: `git status
    --short` shows no path under `docs/dev/program/`; `git check-ignore .foreman` succeeds;
    `git -C .foreman rev-parse --is-inside-work-tree` prints `true`; `git -C <scratch>
