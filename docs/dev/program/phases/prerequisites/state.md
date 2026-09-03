@@ -7,7 +7,7 @@ tasks:
   - {n: 1, model: opus, effort: high, status: passed, commits: "13dce8e..0c6f90d", verdict: "Spec ✅ / Quality Approved", minors: [T1-M4, T1-M5]}
   - {n: 2, model: sonnet, effort: medium, status: passed, commits: "8273545..57f5323", verdict: "Spec ✅ / Quality Approved", minors: [T2-R1-M1, T2-R1-M2, T2-R1-M3, T2-R1-M4]}
   - {n: 3, model: sonnet, effort: medium, status: passed, commits: "a03a298..e50992b", verdict: "Spec ✅ / Quality Approved", minors: [T3-M14, T3-M15]}
-  - {n: 4, model: opus, effort: high, status: in-progress, commits: "", verdict: "", minors: []}
+  - {n: 4, model: opus, effort: high, status: passed, commits: "c033155..fd90e51", verdict: "Spec ✅ / Quality Approved", minors: [T4R1-M1, T4R1-M2, T4R1-M3]}
 ---
 
 # Phase `prerequisites` — ledger
@@ -293,3 +293,74 @@ removed.
 exists to produce — cannot be verified from a diff, and was not verified in this phase. Nor was
 the `plugin:skill` naming of a session's visible skill list, nor marker collisions with compliant
 sentences not yet written.
+
+### Task 4 — `[DIST-1]` GitHub marketplace source, `settings.local.json` retired
+
+**Status** passed. **Commits** `c033155..fd90e51` (`1f73631` implementation, `fd90e51` fix round
+1). **Model and effort actually used** implementer Opus/high, reviewer Opus/high — the plan's
+table, because `MANIFEST.tsv` is a declared trust boundary. **Verdict** Spec ✅ / Quality Approved
+(round 1).
+
+**Gate, as the controller observed it.** 657/0 (delta +47) → 660/0 (delta +50). The trust
+boundary's facts were checked directly rather than read off the report: `MANIFEST.tsv` carries no
+`settings.local` row; `settings.local.json.tmpl` is genuinely deleted rather than emptied; both
+changes are in the single commit `1f73631`, as the plan required; the template and this
+repository's own `.claude/settings.json` both declare `"source": "github"`, `"repo":
+"yorah/foreman-harness"`; `gitignore-additions.txt` still ignores `.claude/settings.local.json`
+and `*.diff`, its comment now citing per-contributor permission grants with no marketplace path.
+
+Ruling: `evolve` mode's guarantee for `.claude/settings.json` is sound but rests on prose, not
+code, and its behaviour is **not verified by this phase**. — The near-Critical question was
+whether a fresh `foreman-init` into a repository that already has `.claude/settings.json` would
+clobber it. Nothing mechanically consumes `MANIFEST.tsv` — `bin/foreman-root` only uses its path
+as a sentinel to locate the plugin root — so there is no code path that could overwrite anything;
+`foreman-init`'s Step 5 prose states `evolve` means "adding what is absent and touching nothing
+else", which is correct and explicit. Confirming the behaviour requires running `/foreman-init`
+end to end, which this phase is forbidden to do (it may not install, remove or re-register a
+plugin). — Costs if wrong: a live session could still misread the prose and overwrite a
+contributor's settings; the manifest cannot stop it, because the manifest is not executable.
+Recorded as uncovered, not as checked.
+
+**The dead-subagent episode.** The fix round's dispatch was interrupted **twice by API 529s**, the
+second attempt making no progress at all, with five files staged and uncommitted. Adopted under
+`foreman-phase`'s dead-subagent protocol rather than re-dispatched or discarded.
+
+Ruling: the controller adopted and committed the dead fixer's staged work as `fd90e51`. — The
+protocol's conditions were met and each was established rather than assumed: the gate was Exit 0
+at 660/0 (floor 657, `foreman-baseline` delta +50); the diff read as a **complete** subset of the
+round's three findings, corroborated by arithmetic that lands exactly (`test_templates.sh` +1,
+`test_dogfood.sh` one assertion replaced by three, net +3 over 657); and because the fixer never
+reached its own mutation check, the controller ran it — all four assertions reddened, including a
+differently-cased variant of the `[T4-M1]` claim, proving that guard is case-insensitive as its
+comment says rather than green by luck. The interrupted dispatch is recorded in the commit
+message. Discarding the work would have been this skill's destructive-operation stop-condition,
+and was neither necessary nor taken. — Costs if wrong: a half-applied edit lands green; mitigated
+by having the round-1 reviewer re-derive every controller claim rather than accept it, since the
+agent that judged the work coherent was the agent that committed it. It re-derived all of them and
+confirmed each, and separately confirmed the machine state the kickoff fenced off — the `foreman`
+marketplace registration and the main checkout's `.claude/settings.local.json` are both untouched.
+
+**Open Minors, deferred to `backlog.md` at gate 4:**
+
+- `[T4R1-M1]` The `[T4-M1]` guard's comment and label overclaim its reach; a reworded conflation
+  ships green. Third instance in this phase of a guard claiming more than it checks.
+- `[T4R1-M2]` The dogfood `--scope local` needle matches the raw haystack, so a line-wrapped
+  reintroduction escapes it — the plan's own "assert meaning, not line breaks" constraint.
+- `[T4R1-M3]` The `[T10-1]` note understates the duplication: two new lines beside three stale
+  ones, not one beside two.
+
+**Declared deviations, all judged sound.** The brief's predicted count was wrong twice over — its
+absolute numbers were stale, and its arithmetic missed that `tests/test_templates.sh` emits one
+assertion per file under `templates/`, so deleting a template silently removes an assertion (654
++ 4 − 1 = 657, confirmed empirically). The brief's `trust` needle was **self-satisfied**: it
+passed against the *old* template, because an unrelated "new gates, new trust boundaries" bullet
+contains the word — a needle green before the fix is not a test of the fix, and the brief expected
+it to fail. Lengthened to its longest unique form. Two stale comments repaired ("the file above"
+after the block it referenced was deleted; "three rules" above two assertions). And this
+repository's `.gitignore` was edited though the brief did not list it, because it carried the same
+now-false rationale verbatim — the dispatch's own "sweep the class, do not patch one instance"
+caution, correctly applied.
+
+**Uncovered.** Claude Code actually resolving the `github` marketplace source and presenting its
+trust prompt; `/foreman-init` end-to-end generation including the executed `evolve` merge into an
+existing `.claude/settings.json`. Both need a live run this phase may not perform.
