@@ -102,6 +102,19 @@ assert_contains "$skill" "worktree command; the phase session makes its own" \
 assert_not_contains "$skill" "git worktree add" \
   "the human is not handed a worktree command"
 
+# [T3-M5] this file used to tell the PM "the kickoff's own first step is
+# EnterWorktree(name: ...)" -- the same cross-file contradiction [T3-M1] found in the
+# template, one file over: foreman-phase's actual first step, since [DEP-1], is Step 0's
+# dependency check, not EnterWorktree. A PM that trusts this line writes a self-contained
+# kickoff (SKILL.md:117-118,:160) whose first action is EnterWorktree and which never mentions
+# Step 0 -- the [T3-M1] failure, reached through the PM instead of the template.
+assert_not_contains "$skillf" "kickoff's own first step is \`EnterWorktree" \
+  "the PM is no longer told EnterWorktree is the kickoff's first step (unqualified)"
+assert_contains "$skillf" "kickoff's own first *action* is \`foreman-phase\` Step 0's dependency check" \
+  "the PM is told Step 0's dependency check is the kickoff's first action"
+assert_contains "$skillf" "its first *tool call* is \`EnterWorktree" \
+  "the PM is told EnterWorktree is only the kickoff's first *tool call*, not its first action"
+
 # [C2]: the probe section must name which tree to run in, not merely gesture at worktrees --
 # the tree path itself is the load-bearing token; deleting the naming bullets restores the
 # original defect with a green suite unless this is anchored.
@@ -223,18 +236,26 @@ step0_body_lc="$(printf '%s' "$step0_body" | tr '[:upper:]' '[:lower:]')"
 assert_contains "$step0_body_lc" 'do not substitute your own procedure' \
   "Step 0 forbids improvising a missing skill's procedure (case-insensitive)"
 
-# [T3-M4] the ruling is "stops cleanly, never a fallback". The assertion above only proves the
-# prohibition sentence is present, and cannot fail if a later edit keeps that sentence and adds
-# a degraded path underneath it. Scoped to the `### Dependencies` subsection itself, not the
-# wider Step 0 extract, so this cannot be satisfied by unrelated text in the refusal gate above
-# it -- and guarded with the marker foreman-init's own *sanctioned* fallback uses for
-# `claude-md-management` ("is not installed, read its rubric from the marketplace cache
-# instead"): if that phrasing shows up here, someone copied the one fallback this program still
-# allows into a skill the ruling says must not have one.
+# [T3-M4] round 1's guard keyed on 'instead' / 'not installed' -- round 2's review proved by
+# mutation that it misses a real fallback ("Should the plugin be unavailable, run the interview
+# yourself: ..." stayed green) while false-redding on compliant stop prose ("stop instead" /
+# "is not installed, stop:"). Neither of those two tokens survives: a degraded path is a
+# self-substitution -- it tells the session to carry out the missing skill's job in its own
+# voice -- and that shape is what these markers target, not the word "instead" or the state
+# "not installed", both of which occur in perfectly compliant sentences too.
+# "proceed by" -- forbids continuing past the stop with a next action, the inverse of stopping.
+# "yourself" -- forbids delegating the missing skill's job to the session itself ("run the
+# interview yourself"); the two mutations that defeated round 1's guard both use exactly this
+# word, and it does not occur anywhere in the compliant prohibition sentence.
+# "read its rubric from" -- the literal phrase foreman-init's own *sanctioned* fallback for
+# `claude-md-management` uses; catches a literal copy of the one fallback this program allows
+# into a skill the ruling says must not have one, without keying on "instead" alone.
+# Scoped to the `### Dependencies` subsection itself, not the wider Step 0 extract, so this
+# cannot be satisfied by unrelated text in the refusal gate above it.
 deps_line="$(grep -n '^### Dependencies' "$s" | head -1 | cut -d: -f1)"
 deps_body="$(awk -v a="$deps_line" -v b="$next_line" 'NR>a && NR<b' "$s" | tr '\n' ' ' | tr -s ' ')"
 deps_body_lc="$(printf '%s' "$deps_body" | tr '[:upper:]' '[:lower:]')"
-assert_not_contains "$deps_body_lc" 'instead' \
-  "Dependencies subsection carries no fallback path (ruling: presence check, never a fallback)"
-assert_not_contains "$deps_body_lc" 'not installed' \
-  "Dependencies subsection carries no not-installed fallback clause"
+for marker in 'proceed by' 'yourself' 'read its rubric from'; do
+  assert_not_contains "$deps_body_lc" "$marker" \
+    "Dependencies subsection carries no self-substitution fallback (marker: '$marker')"
+done

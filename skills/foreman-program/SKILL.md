@@ -176,7 +176,8 @@ this phase as touching a trust boundary. Always state the model and the effort e
 when you used the default: an unstated model inherits the user's default, which is usually the
 most expensive one.
 
-The kickoff's own first step is `EnterWorktree(name: "<slug>")`. You do not hand the user a
+The kickoff's own first *action* is `foreman-phase` Step 0's dependency check; its first *tool
+call* is `EnterWorktree(name: "<slug>")`. You do not hand the user a
 worktree command; the phase session makes its own.
 
 ## Verifying a finished phase, cheaply

@@ -260,11 +260,15 @@ assert_contains "$(cat "$t/CLAUDE.md.tmpl" 2>/dev/null || true)" \
   "**This repository works in git worktrees.**" \
   "CLAUDE.md template states the worktree rule foreman-program relies on"
 
-# kickoff.md.tmpl's first action must literally be EnterWorktree(name: "{{PHASE_SLUG}}") --
-# foreman-program tells the PM this as a statement of fact it does not itself verify.
+# [T3-M5] kickoff.md.tmpl must literally carry EnterWorktree(name: "{{PHASE_SLUG}}") --
+# foreman-program tells the PM this is the kickoff's first *tool call* (SKILL.md, just below)
+# as a statement of fact it does not itself verify. This assertion only proves the call is
+# present in the template, not that it is first -- since [T3-M1] the template's actual first
+# step is Step 0, not EnterWorktree, so a label claiming "first step" would itself now be the
+# false cross-file claim [T3-M1] and [T3-M5] were raised about. Worded to match what is checked.
 assert_contains "$(cat "$t/program/kickoff.md.tmpl" 2>/dev/null || true)" \
   'EnterWorktree(name: "{{PHASE_SLUG}}")' \
-  "kickoff template's first step matches what foreman-program promises the PM"
+  "kickoff template carries the EnterWorktree call foreman-program promises the PM"
 
 # [T3-M1] the kickoff header's ordering claim must not contradict foreman-phase's own first
 # step. foreman-phase/SKILL.md's own first "## Step N" heading is the ground truth -- a phase
@@ -273,15 +277,54 @@ assert_contains "$(cat "$t/program/kickoff.md.tmpl" 2>/dev/null || true)" \
 # check silently. Deriving the expected step from the skill itself (rather than hard-coding
 # "Step 0") means this goes red again if the skill's first step is ever renumbered and the
 # template is not updated to match -- the cross-file drift POLICY.md's model table warns about.
+# [T3-M7] two corrections from the round-2 review, found by mutation. First: this derivation
+# only distinguishes a renumbered step from "Step 1a" for step numbers that are not a literal
+# prefix of "1a" -- i.e. it works for "Step 0" (the number in the repository today) and would
+# also work for "Step 2" or higher, but a renumbering to bare "Step 1" collides byte-for-byte
+# with "Step 1a" and the ordering check cannot pass no matter what the template says. The
+# byte-offset search below is anchored so "Step 1" cannot match *inside* "Step 1a" (the
+# character after the digits must not be a digit or letter), which is the fix mutation B2
+# asked for; it does not lift the "Step 1" collision itself, since "Step 1" genuinely has no
+# byte offset in this template that precedes "Step 1a" once the boundary is enforced -- that
+# case still fails, correctly, and loudly, rather than passing by prefix accident. Second: the
+# comment above overstated this as "goes red again if renumbered" without that caveat; this
+# comment is the correction.
+# [T3-M8] the presence check below used to pass vacuously when $first_step came out empty (a
+# `case *""* ` glob matches everything), and the ordering check followed it into a false green
+# (byte offset 0 always precedes "Step 1a"'s later offset). Guarded explicitly: an empty
+# derivation is now itself a failure, not a silent pass.
 kickoff_tmpl="$(cat "$t/program/kickoff.md.tmpl" 2>/dev/null || true)"
 first_step="$(grep -m1 -oE '^## Step [0-9]+' "$FOREMAN_ROOT/skills/foreman-phase/SKILL.md" \
   | sed 's/^## //')"
-assert_contains "$kickoff_tmpl" "$first_step" \
-  "kickoff template names foreman-phase's actual first step ($first_step)"
-first_pos="$(printf '%s' "$kickoff_tmpl" | grep -bo -- "$first_step" | head -1 | cut -d: -f1)"
-step1a_pos="$(printf '%s' "$kickoff_tmpl" | grep -bo 'Step 1a' | head -1 | cut -d: -f1)"
-if [ -n "$first_pos" ] && [ -n "$step1a_pos" ] && [ "$first_pos" -lt "$step1a_pos" ]; then _ok
-else fail "kickoff template names $first_step before Step 1a (got first=$first_pos step1a=$step1a_pos)"; fi
+if [ -n "$first_step" ]; then _ok
+else fail "foreman-phase/SKILL.md has a '## Step N' heading to derive the first step from"; fi
+if [ -n "$first_step" ]; then
+  assert_contains "$kickoff_tmpl" "$first_step" \
+    "kickoff template names foreman-phase's actual first step ($first_step)"
+  first_num="$(printf '%s' "$first_step" | grep -oE '[0-9]+')"
+  first_pos="$(printf '%s' "$kickoff_tmpl" \
+    | grep -boE "Step ${first_num}([^0-9A-Za-z]|\$)" | head -1 | cut -d: -f1)"
+  step1a_pos="$(printf '%s' "$kickoff_tmpl" | grep -bo 'Step 1a' | head -1 | cut -d: -f1)"
+  if [ -n "$first_pos" ] && [ -n "$step1a_pos" ] && [ "$first_pos" -lt "$step1a_pos" ]; then _ok
+  else
+    fail "kickoff template names $first_step before Step 1a (got first=$first_pos step1a=$step1a_pos)"
+  fi
+else
+  fail "kickoff template names foreman-phase's actual first step (no first step to compare)"
+  fail "kickoff template names the first step before Step 1a (no first step to compare)"
+fi
+
+# [T3-M6] the same file's body used to say "before doing anything else" about the two git reads
+# in Step 1a, three lines under a header that now says Step 0 runs first -- two competing
+# claims of primacy in one file, the miniature of what [T3-M1] found across two files. The
+# reads are read-only and spend nothing, so "before entering the worktree" states the real
+# constraint (they must happen before EnterWorktree, since gate 6 needs them and a worktree
+# cannot supply them) without also claiming to precede Step 0.
+kickoff_flat="$(tr '\n' ' ' < "$t/program/kickoff.md.tmpl" | tr -s ' ')"
+assert_not_contains "$kickoff_flat" 'before doing anything else' \
+  "kickoff template no longer claims Step 1a's reads precede everything, including Step 0"
+assert_contains "$kickoff_flat" 'before entering the worktree' \
+  "kickoff template states the real constraint: before EnterWorktree, not before Step 0"
 
 # settings.json.tmpl must render to exactly one well-formed JSON object and carry the settings
 # other scripts and Claude Code itself depend on. The raw template is not valid JSON on its own

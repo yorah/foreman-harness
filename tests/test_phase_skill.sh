@@ -373,14 +373,21 @@ assert_contains "$step0_body" 'superpowers@claude-plugins-official' \
 step0_body_lc="$(printf '%s' "$step0_body" | tr '[:upper:]' '[:lower:]')"
 assert_contains "$step0_body_lc" 'do not substitute your own procedure' \
   "Step 0 forbids improvising a missing skill's procedure (case-insensitive)"
-# [T3-M4] the ruling is "stops cleanly, never a fallback" -- the assertion above only proves the
-# prohibition sentence is present, and cannot fail if a later edit keeps that sentence and adds
-# a degraded path underneath it (the exact drift the ruling exists to prevent). Guard the other
-# direction with the marker foreman-init's own *sanctioned* fallback uses for `claude-md-
-# management` ("is not installed, read its rubric from the marketplace cache instead") -- if
-# that phrasing shows up here, someone copied the one fallback this program still allows into a
-# skill the ruling says must not have one.
-assert_not_contains "$step0_body_lc" 'instead' \
-  "Step 0 carries no fallback path (ruling: presence check only, never a fallback)"
-assert_not_contains "$step0_body_lc" 'not installed' \
-  "Step 0 carries no not-installed fallback clause"
+# [T3-M4] round 1's guard keyed on 'instead' / 'not installed' -- round 2's review proved by
+# mutation that it misses a real fallback ("If the skill is unavailable, proceed by running
+# gate 3 yourself: ..." stayed green) while false-redding on compliant stop prose ("stop
+# instead" / "is not installed, stop:"). Neither of those two tokens survives: a degraded path
+# is a self-substitution -- it tells the session to carry out the missing skill's job in its
+# own voice -- and that shape is what these markers target, not the word "instead" or the
+# state "not installed", both of which occur in perfectly compliant sentences too.
+# "proceed by" -- forbids continuing past the stop with a next action, the inverse of stopping.
+# "yourself" -- forbids delegating the missing skill's job to the session itself ("run it
+# yourself", "do the interview yourself"); the two mutations that defeated round 1's guard both
+# use exactly this word, and it does not occur anywhere in the compliant prohibition sentence.
+# "read its rubric from" -- the literal phrase foreman-init's own *sanctioned* fallback for
+# `claude-md-management` uses; catches a literal copy of the one fallback this program allows
+# into a skill the ruling says must not have one, without keying on "instead" alone.
+for marker in 'proceed by' 'yourself' 'read its rubric from'; do
+  assert_not_contains "$step0_body_lc" "$marker" \
+    "Step 0 carries no self-substitution fallback (marker: '$marker')"
+done
