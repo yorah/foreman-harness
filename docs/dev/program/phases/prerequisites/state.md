@@ -508,3 +508,40 @@ returns. A resuming session should skip Step 4 entirely — all four tasks are `
 above, with their commit ranges and verdicts — and re-enter at Step 5 gate 1 (cheap, and
 `gate-chain.md` requires the branch's own count anyway), then gate 2 against the existing
 `branch-review.diff`. The worktree, the branch and every artefact are on disk and committed.
+
+### Resumption — 2026-09-03
+
+Re-entered on the operator's instruction: resume at gate 1, and update the two program-manager
+files this phase had deliberately left stale.
+
+Ruling: the phase session edited `POLICY.md` and `STATE.md`, which `POLICY.md`'s own opening
+paragraph forbids it to do. — The operator instructed it directly, and a direct instruction
+outranks the skill's and the policy's defaults; the operator is also the program manager here, so
+the file's owner is the party that asked. The edits were made **on the phase branch**, not on the
+default branch, so they travel with the merge and never assert a count `main` cannot meet — `main`
+still measures 610. The provenance is recorded both here and in `POLICY.md`'s own baseline
+paragraph, so a later reader does not have to reconstruct who wrote it or why the ownership rule
+appears broken. — Costs if wrong: a phase-authored edit to a file the program manager owns, which
+the program manager can see in the diff and revert in one commit.
+
+`POLICY.md`: `baseline-count: 610` → `660`, provenance restated as green at `e8dc48e`, recorded
+2026-09-03, with the raise attributed to this phase and the reason it is recorded on the branch.
+Verified after the edit that `baseline-check.sh` still parses the line and that the raised value
+is live: `{"verdict":"pass","baseline":660,"count":660,"delta":0}`, exit 0 — the baseline now has
+no headroom, which is the point of raising it.
+
+`STATE.md`: the phase row moved `planned` → `gates` with its real position; the **Next action**
+section rewritten from "launch phase A" to the resumption procedure, since the phase is
+mid-gate-chain rather than awaiting launch; the stale expected count **634 corrected to 660**; the
+`[DIST-1]` marketplace ruling marked superseded-on-the-branch-not-on-`main`, with the point that
+the plugin this session ran is still the directory-sourced one and the re-registration
+`DEFERRED.md` schedules is what closes the gap; and phase B warned about both of this phase's
+carry-forward findings (the abridged review package, and `[T2-R1-M4]`'s `GIT_DIR` residual).
+
+Checked rather than assumed, before and after: no test constrains the literal `610` or this
+repository's real `STATE.md` — every relevant assertion uses fixtures — so the edits could not
+green or red the suite by touching what it measures. Gate 1 re-run **after** the edits: `14 files,
+660 passed, 0 failed`, exit 0. Invariant 8 holds in both files; the one over-length line is the
+`STATE.md` table row, which cannot wrap without breaking the table and which was already 145
+columns before this phase touched it — trimmed to 141 rather than left at the 253 the first draft
+produced.

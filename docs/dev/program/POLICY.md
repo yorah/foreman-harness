@@ -27,11 +27,19 @@ Run in this order. All must be green before a phase may merge.
 
 ## Baseline
 
-baseline-count: 610
+baseline-count: 660
 
-Green at `de22a66`, recorded 2026-08-31. A task report whose test count falls below
-this is rejected before a reviewer is spawned. Raise it when a phase merges; never lower it
-without a ruling that says why.
+Green at `e8dc48e`, recorded 2026-09-03 — the `feat/prerequisites` head, observed by the phase
+controller as `14 files, 660 passed, 0 failed`, exit 0, from a plain `bash tests/run.sh`. A task
+report whose test count falls below this is rejected before a reviewer is spawned. Raise it when a
+phase merges; never lower it without a ruling that says why.
+
+Raised from `610` (green at `de22a66`, 2026-08-31) by phase A, `prerequisites`, which added fifty
+net assertions across four tasks. Recorded on the phase branch rather than on the default branch,
+so it lands with the merge and never claims a count the default branch cannot meet — `main` still
+measures 610 until then. Written by the phase session on the operator's explicit instruction,
+which is the one thing this file's own opening paragraph otherwise forbids; the phase's ledger
+records that provenance.
 
 ## Trust boundaries
 
