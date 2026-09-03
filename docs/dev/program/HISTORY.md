@@ -31,7 +31,8 @@ after the summary and again on merged `main`.
 backlog. 4: 24 items flushed to `docs/dev/backlog.md`. 5: eight entries in `docs/dev/CONTEXT.md`,
 including the reviewer return-size ratio spec §12.11 asked for (findings files 317,565 bytes
 against about 12 KB returned, roughly 1:26). 6: rebase was a no-op, PR #1 opened with the
-evidence. 7: report written, worktree and branch removed by the program manager after merge.
+evidence. 7: report written; the remote branch was
+deleted by the program manager after merge, the local worktree is still present and locked.
 
 **Deviations worth remembering.** The phase edited `POLICY.md` (baseline 610 → 660) and
 `STATE.md` on the operator's explicit instruction, against the rule that a phase never edits
