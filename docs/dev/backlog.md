@@ -394,6 +394,9 @@ were `[BR-9]` and `[BR-10]`, which were inaccuracies in the controller's own led
   suite could notice. Needs an assertion over `docs/dev/program/phases/*/kickoff.md`, not just
   `kickoff.md.tmpl`. Highest-value item in this section — it is the reason the next drift of this
   class will also ship green.
+  **Routed to phase C, 2026-09-03 (PM ruling, `STATE.md`):** under phase B's layout rendered
+  kickoffs live in the gitignored work root, so a suite assertion over them is vacuous in CI. C's
+  `foreman-kickoff-lint` (spec §12.6) checks a kickoff at write time — the shape that survives.
 - [ ] [BR-4] Two `[DIST-1]` needles are non-discriminating, and `"claude plugin list"`'s label
   asserts the opposite polarity of what the pre-fix template said. Needs both needles made
   discriminating and the label corrected.
