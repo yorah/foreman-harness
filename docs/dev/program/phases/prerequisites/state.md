@@ -416,3 +416,54 @@ rewrite, and assert the artifact has no truncation marker before dispatching), w
 structural change to the harness and therefore `/foreman-init` or a program decision. Filed for
 the program manager; deliberately **not** patched here, since a phase session does not amend the
 skill it is running.
+
+## Gate chain
+
+### Gate 1 — gate commands
+
+`POLICY.md`'s gate table has one row, `bash tests/run.sh`, run plain from the worktree root.
+Actual output:
+
+```
+test_agents.sh
+test_baseline_check.sh
+test_bin.sh
+test_dogfood.sh
+test_init_skill.sh
+test_lib_assert.sh
+test_manifests.sh
+test_phase_skill.sh
+test_phase_state.sh
+test_plans.sh
+test_program_skill.sh
+test_resolve_gate.sh
+test_task_brief.sh
+test_templates.sh
+
+14 files, 660 passed, 0 failed
+GATE1_EXIT=0
+```
+
+Exit 0, which is the authoritative signal — `gate-chain.md` warns that the runner gates on the
+recorded baseline *after* printing its summary, so a sub-baseline run can print `0 failed` and
+still fail. The exit code was captured deliberately for that reason rather than inferred from the
+summary line.
+
+Branch-level baseline check, on the branch's own observed count rather than any per-task number:
+
+```
+foreman-baseline --policy <abs-policy> --count 660
+{ "verdict": "pass", "baseline": 610, "count": 660, "delta": 50 }
+BASELINE_EXIT=0
+```
+
+**Gate 1: green.** 610 → 660, fifty net assertions added across four tasks, nothing below
+baseline at any point in the phase.
+
+Note for the record: this run is **plain**, with no environment prefix. That is the phase's own
+acceptance evidence, not a convenience — the Step 1c baseline needed
+`env PATH="/usr/bin:$PATH" GIT_CONFIG_GLOBAL=/dev/null` to reach 610/0 and the plain run was
+522/88. Tasks 1 and 2 removed both crutches, so spec §12.1 item 1 is satisfied on this machine:
+the suite is green with `jq` served by a tool-manager shim resolving through `$HOME`, and green
+under a global git config mandating unsatisfiable commit signing (verified separately against a
+constructed hostile config whose hostility was itself probed).
