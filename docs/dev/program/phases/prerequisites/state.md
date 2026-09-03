@@ -467,3 +467,44 @@ acceptance evidence, not a convenience — the Step 1c baseline needed
 the suite is green with `jq` served by a tool-manager shim resolving through `$HOME`, and green
 under a global git config mandating unsatisfiable commit signing (verified separately against a
 constructed hostile config whose hostility was itself probed).
+
+### Gate 2 — whole-branch review: NOT REACHED
+
+Dispatched five times to `foreman-branch-reviewer` (Opus, high). Every attempt terminated on a
+server-side `API Error: 529 Overloaded` — request ids `req_011CeggDkqfHE3pbCqhWmSMV`,
+`req_011CeggYCRngcHH7ZTb9QfY7`, `req_011Ceggr3LbVhb6fumkUJfVD` among them. The first attempt died
+after its opening line; the rest died before producing any output. **No findings file was ever
+written**, and `branch-review.md` does not exist. The review package itself is ready and correct:
+`branch-review.diff`, raw and complete at 7659 lines, `origin/main...HEAD`.
+
+Between attempts the dispatch was restructured to survive interruption — write the findings file
+as a stub first, work the areas in descending order of risk, append each conclusion as it lands,
+and record the `GO`/`NO-GO` the moment it is reached. It never got far enough for that to help.
+
+Ruling: the phase stops here rather than substituting its own procedure for the missing gate. —
+Three alternatives were available and each was rejected. **Downgrading the reviewer's model:**
+`gate-chain.md` specifies "Opus, high effort, always" for this gate, and API load is not a reason
+to weaken the last structural check before a merge — least of all on a branch whose per-task
+reviews are already known to have run on abridged diffs. **Reviewing the branch myself:** the gate
+exists precisely to keep a 7659-line analysis out of the controller's context, and a controller
+grading its own phase — including a fix round it committed itself — is not the independent read
+the gate is for. **Skipping to gate 3:** `gate-chain.md` is explicit that a clean earlier gate is
+not a reason to skip a later one, and gates 2 and 3 check different things (the reviewer grades
+the diff; the judge checks whether the claimed verification happened). — Costs if wrong: the
+branch waits for capacity that will return. That is the cheap error. Merging on four abridged
+task reviews with no whole-branch read would be the expensive one.
+
+This is the same principle the phase's own `[DEP-1]` ruling states, applied to the controller: a
+required dependency is unavailable, so the session **stops cleanly and says so** rather than
+improvising a substitute for it. A fallback here would be a second, worse copy of the branch
+review, written by the least independent reader available.
+
+**Gates 3, 4, 5, 6 and 7 are consequently unreached.** Nothing has been pushed; no pull request
+has been opened; `main` is untouched. The branch `feat/prerequisites` is complete, committed, and
+green at gate 1.
+
+**To resume:** re-run `/phase docs/dev/program/phases/prerequisites/kickoff.md` when Opus capacity
+returns. A resuming session should skip Step 4 entirely — all four tasks are `passed` in the head
+above, with their commit ranges and verdicts — and re-enter at Step 5 gate 1 (cheap, and
+`gate-chain.md` requires the branch's own count anyway), then gate 2 against the existing
+`branch-review.diff`. The worktree, the branch and every artefact are on disk and committed.
