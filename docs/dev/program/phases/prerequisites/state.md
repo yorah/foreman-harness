@@ -313,7 +313,10 @@ Ruling: `evolve` mode's guarantee for `.claude/settings.json` is sound but rests
 code, and its behaviour is **not verified by this phase**. — The near-Critical question was
 whether a fresh `foreman-init` into a repository that already has `.claude/settings.json` would
 clobber it. Nothing mechanically consumes `MANIFEST.tsv` — `bin/foreman-root` only uses its path
-as a sentinel to locate the plugin root — so there is no code path that could overwrite anything;
+as a sentinel to locate the plugin root [**corrected at gate 3 — see below: `foreman-root`
+resolves via `BASH_SOURCE`/`readlink` and does not use the manifest at all; the file appears in
+one of its comments as an example of something a skill reads**] — so there is no code path that
+could overwrite anything;
 `foreman-init`'s Step 5 prose states `evolve` means "adding what is absent and touching nothing
 else", which is correct and explicit. Confirming the behaviour requires running `/foreman-init`
 end to end, which this phase is forbidden to do (it may not install, remove or re-register a
@@ -610,3 +613,62 @@ across all four edited files. `baseline-check.sh` still parses the `baseline-cou
 The reviewer also confirmed what the controller could not confirm about itself: **none of the
 twelve task Minors had reached `docs/dev/backlog.md`** — zero tag hits, correctly deferred "at
 gate 4", which had never been reached. Gate 4 is blocking and must flush all of them.
+
+### Gate 3 — adversarial verification: **VERIFIED WITH CAVEATS**
+
+`fable:fable-judge`, dispatched to a fresh Opus subagent per `gate-chain.md` (the controller does
+not invoke the judge itself). Findings:
+`docs/dev/program/phases/prerequisites/branch-judge.md`. The verdict permits proceeding **only**
+if every caveat is recorded here and any caveat outliving the branch reaches `backlog.md`. All
+seven are recorded below; the ones that outlive the branch are marked and go to gate 4.
+
+**Caveat 1 — the branch is not finished.** Gates 3–7 had not run and gate 4 is blocking. The judge
+independently confirmed **zero** of the twelve task Minors and eleven carried branch-review
+findings have reached `docs/dev/backlog.md`. This is the second independent confirmation of that
+gap. Addressed by gate 4, next.
+
+**Caveat 2 — who committed `fd90e51` is unverifiable.** Every commit on this branch carries one
+git identity, so nothing in the repository distinguishes the controller's adopted commit from an
+implementer's. Mitigated, not resolved: a separate reviewer graded that commit and returned
+Approved afterwards, and its state reproduces at 660/0. Recorded because the mitigation is
+evidence about the *work*, not about the *authorship claim*, and the two are not the same thing.
+
+**Caveat 3 — what the ten per-task reviewers actually saw cannot be reconstructed.** The judge
+confirmed the abridging proxy hook is real and **still live — it hit the hook itself this
+session**. The on-disk packages are now raw and complete, and gate 2 read the whole branch raw.
+But the ledger's "the verdicts stand" argument is **unprovable by re-execution**, and the judge
+is right to say so: it rests on each reviewer having mutation-checked against the live tree,
+which is a claim about their process, not a reproducible artefact. Outlives the branch — the hook
+is still live for every future phase. To gate 4.
+
+**Caveat 4 — `evolve`'s `.claude/settings.json` guarantee is unenforced and untested**, and the
+controller's stated reasoning for it was **wrong in one particular**. The conclusion holds and is
+strengthened: nothing mechanically consumes `MANIFEST.tsv` *at all*. But the claim that
+`bin/foreman-root` uses the manifest path as a sentinel is false — it resolves via
+`BASH_SOURCE`/`readlink`, and the manifest appears only in one of its comments, as an example of
+something a skill reads rather than execs. The controller inferred "sentinel" from a grep hit on
+a comment line without reading the six-line script. Corrected in the task 4 ruling above.
+Verifying the guarantee still needs a live `/foreman-init`, which this phase may not run.
+Outlives the branch. To gate 4.
+
+**Caveat 5 — zero baseline headroom is a live trip-wire.** `baseline 660, count 660, delta 0`, and
+the default branch measures **610** until this merges. Any future change that removes a single
+assertion fails the gate immediately. That is the intended behaviour of a baseline, and it is
+worth stating plainly rather than discovering: the next phase has no slack.
+
+**Caveat 6 — `POLICY.md` was edited by a phase session against its own stated rule.** Authorised
+by the operator and disclosed in two places, but **the authorisation itself is outside a judge's
+view** — nothing in the repository proves it was given. Recorded here precisely because the
+evidence for it lives only in the session transcript and in this sentence.
+
+**Caveat 7, cosmetic — a ledger shorthand is not runnable as written.** Earlier entries write
+`foreman-baseline --count 660`; the script requires `--policy` and exits 2 without it. The
+underlying checks were all run with the flag and passed. Corrected in practice below, and worth
+knowing before someone copies a line out of this ledger expecting it to work.
+
+Ruling: gate 3 proceeds. — The verdict is `VERIFIED WITH CAVEATS`, every caveat is recorded above,
+and the four that outlive the branch (2 in part, 3, 4, and the `[BR-*]` set) go to `backlog.md` at
+gate 4, which is the next gate and is blocking. None of the seven asserts that a claim on this
+branch is *false*; they assert that four of them are **not provable from the repository alone**,
+which is a different and honest thing for a judge to say. — Costs if wrong: the branch merges
+carrying four unprovable-by-re-execution claims, each named, each in the backlog.
