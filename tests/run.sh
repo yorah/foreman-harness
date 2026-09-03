@@ -4,6 +4,25 @@ set -uo pipefail
 FOREMAN_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 export FOREMAN_ROOT
 
+# Every git command the suite runs, directly or through a script under test, sees THIS global
+# configuration and not the operator's -- as far as git's *file-based* config resolution goes.
+# GIT_CONFIG_GLOBAL replaces the global config file and GIT_CONFIG_NOSYSTEM=1 removes the system
+# file; git's own default is already "do not sign", so no explicit gpgsign=false is needed once
+# both of those are in place. GIT_CONFIG_PARAMETERS and GIT_CONFIG_COUNT sit ABOVE the global
+# file in git's precedence order and would otherwise reintroduce exactly the failure this task
+# exists to remove -- e.g. from a `git -c ...` wrapper, or a hook that re-exports them into a
+# nested `bash tests/run.sh` -- so both are unset here too. [safe] directory = * is pinned
+# explicitly rather than left to fall out of the replaced file, because a contributor's WSL or
+# containerised checkout may need a safe.directory entry just to be usable at all, and this pin
+# must not take that away. The identity is a placeholder so fixtures need not set one; the
+# default branch is pinned so `git init` output is the same on every machine.
+FOREMAN_GIT_CONFIG="$(mktemp)"
+printf '%s\n' '[user]' '	name = foreman-tests' '	email = foreman-tests@example.invalid' \
+  '[init]' '	defaultBranch = main' '[safe]' '	directory = *' > "$FOREMAN_GIT_CONFIG"
+export GIT_CONFIG_GLOBAL="$FOREMAN_GIT_CONFIG" GIT_CONFIG_NOSYSTEM=1
+unset GIT_CONFIG_PARAMETERS GIT_CONFIG_COUNT
+trap 'rm -f "$FOREMAN_GIT_CONFIG"' EXIT
+
 total_pass=0
 total_fail=0
 files=0

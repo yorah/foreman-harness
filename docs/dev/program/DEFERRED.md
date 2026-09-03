@@ -17,13 +17,20 @@ which it becomes answerable — never a wall-clock time nobody has read.
   `claude plugin marketplace list` shows `foreman` with `Source: GitHub (yorah/foreman-harness)`
   and `claude plugin list` shows `foreman@foreman` enabled. Then restart the PM session so it
   runs the installed skill (spec §10).
-- [ ] **Raise the baseline.** Condition: the same merge. Action: set `baseline-count:` in
-  `docs/dev/program/POLICY.md` to the count the merged `main` prints for `bash tests/run.sh`
-  (the plan expects 634; trust the run, not the plan), with the merge SHA and the date, in the
-  same commit as the `STATE.md` row update.
-- [ ] **Spec §12.11, carried from the 2026-08-28 spec §15.4: measure the reviewer return-size
-  ratio** during phase A, the first phase of this program. Condition: phase A's ledger is
-  complete. Action: for each task, compare the size of the reviewer's returned message (in the
-  phase session's transcript, which the human has) against the size of
-  `docs/dev/program/phases/prerequisites/task-N-review.md`; record the ratio in
-  `docs/dev/CONTEXT.md` under a dated heading.
+- [ ] **Re-attribute the baseline to the merge commit.** Condition: the same merge. Note the
+  raise itself is already done: phase A set `baseline-count:` in `docs/dev/program/POLICY.md` to
+  `660` on its own branch, on the operator's instruction, so it lands with the merge rather than
+  claiming a count `main` cannot meet. What is left is the attribution. Action: run
+  `bash tests/run.sh` on the merged `main`, confirm it prints `660` (**not** the `634` this entry
+  used to name — that figure predated the phase's actual assertion count, and phase A observed
+  660 passed, 0 failed, exit 0), and re-attribute the baseline paragraph to the merge SHA and
+  date, in the same commit as the `STATE.md` row update. If the merged count is not 660, trust
+  the run and not this entry — but then find out why, because phase A's branch was green at 660
+  with zero headroom.
+- [x] **Spec §12.11, carried from the 2026-08-28 spec §15.4: measure the reviewer return-size
+  ratio** during phase A, the first phase of this program. **Done** at phase A's gate 5, recorded
+  in `docs/dev/CONTEXT.md` under "Phase A (`prerequisites`) — 2026-09-03". Result: 317,565 bytes
+  of findings files against roughly 12 KB of return blocks, an aggregate ratio of about **1:26** —
+  the controller absorbed under 4% of what the reviewers wrote. The file sizes are exact; the
+  return sizes are counted from the session transcript and include harness framing, so treat the
+  ratio as an order of magnitude. The verdicts-only contract holds by a wide margin.

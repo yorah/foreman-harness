@@ -10,6 +10,22 @@ phase should be — that is the program manager's job.
 
 Announce: "Running phase `<slug>` from `<kickoff path>`."
 
+## Step 0 — dependencies, before anything else
+
+This skill hands work to two skills from other plugins, and the first of those calls is inside
+the gate chain, where a stop costs a finished branch. Check them here, where a stop costs
+nothing. The skills available to this session (the list the harness puts in your context) must
+include:
+
+- `fable:fable-judge`, from the plugin `fable@fable-method` — gate 3, adversarial verification.
+- `superpowers:finishing-a-development-branch`, from the plugin
+  `superpowers@claude-plugins-official` — gate 7, close.
+
+If either is missing, stop: name the missing skill and the plugin it comes from, and end —
+**do not substitute your own procedure for it**. An improvised gate 3 is exactly the false
+completion claim that gate exists to catch, and a phase that ran it on itself has verified
+nothing.
+
 ## Step 1 — capture identity, enter the worktree, baseline the tree
 
 Do these three things in order, before any implementer touches anything.

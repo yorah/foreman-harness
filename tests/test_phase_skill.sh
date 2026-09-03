@@ -347,3 +347,61 @@ assert_contains "$skill" 'If the kickoff names no branch, ask before proceeding'
 # first version of this assertion did.
 assert_not_contains "$(tr '\n' ' ' < "$s" | tr -s ' ')" 'the exact branch name that was created' \
   "the discover-and-report-back wording is gone"
+
+# --- [DEP-1] the skills this one hands work to are checked at entry, not discovered at gate 3 -
+# gate-chain.md dispatches fable:fable-judge (gate 3) and superpowers:finishing-a-development-
+# branch (gate 7). Without a check up front, a session whose operator declined a plugin's trust
+# prompt discovers the gap with a finished branch in hand. The check must name each skill it
+# depends on, must sit before Step 1, and must tell the session to stop rather than improvise.
+step0_line="$(grep -n '^## Step 0 ' "$s" | head -1 | cut -d: -f1)"
+step1_line="$(grep -n '^## Step 1 ' "$s" | head -1 | cut -d: -f1)"
+if [ -n "$step0_line" ] && [ -n "$step1_line" ] && [ "$step0_line" -lt "$step1_line" ]; then _ok
+else fail "foreman-phase has a '## Step 0' heading before '## Step 1' (got step0=$step0_line step1=$step1_line)"; fi
+step0_body="$(awk -v a="$step0_line" -v b="$step1_line" 'NR>a && NR<b' "$s" | tr '\n' ' ' | tr -s ' ')"
+assert_contains "$step0_body" 'fable:fable-judge' \
+  "Step 0 names fable:fable-judge as a dependency"
+assert_contains "$step0_body" 'superpowers:finishing-a-development-branch' \
+  "Step 0 names superpowers:finishing-a-development-branch as a dependency"
+assert_contains "$step0_body" 'fable@fable-method' \
+  "Step 0 names the plugin fable-judge comes from, so the operator knows what to install"
+assert_contains "$step0_body" 'superpowers@claude-plugins-official' \
+  "Step 0 names the plugin the superpowers skills come from"
+# [T3-M3] matched against a lowercased copy, not the raw mixed-case text: the raw form pinned a
+# sentence-initial capital "Do", so an editor who capitalises that sentence -- ordinary English,
+# and exactly what the brief's own Step 3 text did -- broke a green suite over typography with
+# no change in meaning. Lowercasing both sides tests the claim, not its capitalisation.
+step0_body_lc="$(printf '%s' "$step0_body" | tr '[:upper:]' '[:lower:]')"
+assert_contains "$step0_body_lc" 'do not substitute your own procedure' \
+  "Step 0 forbids improvising a missing skill's procedure (case-insensitive)"
+# [T3-M4] round 2's review closed detection coverage as a target: substring matching is
+# polarity-blind, so it cannot tell a fallback from a prohibition of that fallback or from a
+# compliant stop -- the same vocabulary marks all three. Proved in-repo, not hypothetically:
+# `references/gate-chain.md:64`'s own compliant sentence, "do not invoke `fable:fable-judge`
+# **yourself**", collided with round 2's bare 'yourself' marker ([T3-M9]), and a compliant
+# resume instruction ("...proceed by starting a fresh phase session") collided with 'proceed
+# by'. Widening the marker list trades one more false negative for one more false positive,
+# and a false positive is the worse failure: the cheapest way back to green is deleting the
+# ruling-reinforcing sentence that tripped it. So this list is not widened again, and is now
+# narrowed past round 2's two collisions rather than left to catch more shapes:
+# "proceed by running" -- the exact phrase both of round 1's defeating mutations used to
+# describe carrying out the missing skill's job in the session's own voice; narrower than bare
+# "proceed by" so a compliant resume instruction ("proceed by starting a fresh session") no
+# longer collides.
+# "yourself:" -- colon-anchored, not bare "yourself": every fallback shape seen across three
+# rounds phrases the self-substitution as "... yourself: <steps>", while this repository's own
+# compliant prohibition at `gate-chain.md:64` ends the sentence with a period ("yourself."), so
+# the colon anchor stops matching it without losing the shapes it was added for.
+# "read its rubric from" -- the literal phrase foreman-init's own *sanctioned* fallback for
+# `claude-md-management` uses; catches a literal copy of the one fallback this program allows
+# into a skill the ruling says must not have one.
+#
+# What this is, stated plainly so the claim below does not outrun it: a tripwire against the
+# specific phrasings named across rounds 1-2, not a detector for the class. A fallback worded
+# around these three phrases passes this check with a green suite -- no content-matching
+# assertion can close that gap, so the rule is enforced by review, not by the gate. The range
+# is this file's Step 0 body only: a degraded path written at a dispatch site the skill merely
+# points to (for instance `references/gate-chain.md`'s gate-3 section) is entirely outside it.
+for marker in 'proceed by running' 'yourself:' 'read its rubric from'; do
+  assert_not_contains "$step0_body_lc" "$marker" \
+    "Step 0 does not carry a known self-substitution phrasing (marker: '$marker')"
+done

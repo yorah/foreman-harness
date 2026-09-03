@@ -103,3 +103,101 @@ assert_exit 0 "run.sh does not gate on a policy with no baseline" -- rt none
 # [M-4] The documented escape hatch must actually work, or it is a comment, not a feature.
 assert_exit 0 "FOREMAN_SKIP_BASELINE bypasses the gate" -- rt high env FOREMAN_SKIP_BASELINE=1
 rm -rf "$fix_dir"
+
+# --- the runner isolates git from the operator's configuration -----------------------------
+# tests/test_phase_state.sh commits in scratch repositories. Under a global config that mandates
+# signed commits with a key nobody can reach, every such commit fails and the suite goes red for
+# a reason that is not in the tree. run.sh therefore pins GIT_CONFIG_GLOBAL for the whole run.
+# Proven in both directions against the same hostile config: a commit run directly under it
+# fails, and the same commit run through run.sh succeeds. Without the first direction, the
+# second would pass on a config that was never hostile at all.
+hostile_dir="$(mktemp -d)"
+hostile_cfg="$hostile_dir/gitconfig"
+printf '%s\n' '[user]' '	name = hostile' '	email = hostile@example.invalid' \
+  '[gpg]' '	format = ssh' '[user]' '	signingkey = /nonexistent/foreman-hostile-signing-key' \
+  '[commit]' '	gpgsign = true' > "$hostile_cfg"
+
+# Direction 1: the hostile config really is hostile. A plain commit under it must fail.
+hostile_repo="$hostile_dir/repo"
+mkdir -p "$hostile_repo"
+env GIT_CONFIG_GLOBAL="$hostile_cfg" GIT_CONFIG_NOSYSTEM=1 git -C "$hostile_repo" init -q
+printf 'x\n' > "$hostile_repo/f"
+env GIT_CONFIG_GLOBAL="$hostile_cfg" GIT_CONFIG_NOSYSTEM=1 git -C "$hostile_repo" add f
+hostile_rc=0
+env GIT_CONFIG_GLOBAL="$hostile_cfg" GIT_CONFIG_NOSYSTEM=1 \
+  git -C "$hostile_repo" commit -qm "should fail" >/dev/null 2>&1 || hostile_rc=$?
+if [ "$hostile_rc" -ne 0 ]; then _ok
+else fail "the hostile git config did not make a plain commit fail (rc=0); the isolation test below proves nothing"; fi
+
+# Direction 2: the same commit, inside a fixture test file run through run.sh, succeeds.
+mkdir -p "$hostile_dir/tests"
+cat > "$hostile_dir/tests/test_fixture.sh" <<'FIXTURE'
+#!/usr/bin/env bash
+set -uo pipefail
+source "$FOREMAN_ROOT/tests/lib_assert.sh"
+r="$(mktemp -d)"
+git -C "$r" init -q
+printf 'x\n' > "$r/f"
+git -C "$r" add f
+rc=0; git -C "$r" commit -qm "under the runner" >/dev/null 2>&1 || rc=$?
+assert_eq "0" "$rc" "a commit inside a test succeeds regardless of the operator's git config"
+assert_eq "main" "$(git -C "$r" symbolic-ref --short HEAD 2>/dev/null)" \
+  "the runner pins init.defaultBranch=main for every scratch repository"
+rm -rf "$r"
+FIXTURE
+printf '%s\n' 'no baseline recorded here' > "$hostile_dir/none.md"
+# [T2-M3] The outer assert_exit only ever saw the nested runner's exit code -- assert_exit
+# discards the child's stdout/stderr -- so a break in either of the fixture's two claims (commit
+# succeeds; branch is main) produced the identical opaque message. Captured here instead, so a
+# failure names which nested assertion broke, not just that something did.
+d2_log="$(mktemp)"
+env GIT_CONFIG_GLOBAL="$hostile_cfg" GIT_CONFIG_NOSYSTEM=1 \
+    FOREMAN_TESTS_DIR="$hostile_dir/tests" FOREMAN_POLICY="$hostile_dir/none.md" \
+    bash "$rr" >"$d2_log" 2>&1
+d2_rc=$?
+d2_detail="$(grep '  FAIL:' "$d2_log" | tr '\n' ';')"
+rm -f "$d2_log"
+assert_eq "0" "$d2_rc" \
+  "run.sh isolates every test's git commands from a hostile global config${d2_detail:+ ($d2_detail)}"
+
+# [T2-M1] GIT_CONFIG_PARAMETERS sits ABOVE the global config file in git's precedence order, so an
+# inherited one (from a `git -c ...` wrapper, or a hook that re-exports it into a nested
+# `bash tests/run.sh`) can reintroduce exactly the failure this task removes even though the
+# pinned file itself is never touched. run.sh must neutralise the variable, not just the file.
+hostile_params="'commit.gpgsign=true' 'gpg.format=ssh' 'user.signingkey=/nonexistent/foreman-hostile-signing-key'"
+
+# Direction 1: the override alone, with no hostile GIT_CONFIG_GLOBAL at all, really is hostile to
+# a plain commit -- otherwise direction 2 below would prove nothing.
+params_repo="$(mktemp -d)"
+git -C "$params_repo" init -q
+printf 'x\n' > "$params_repo/f"
+git -C "$params_repo" add f
+params_rc=0
+env GIT_CONFIG_PARAMETERS="$hostile_params" \
+  git -C "$params_repo" commit -qm "should fail" >/dev/null 2>&1 || params_rc=$?
+if [ "$params_rc" -ne 0 ]; then _ok
+else fail "GIT_CONFIG_PARAMETERS did not make a plain commit fail (rc=0); the isolation test below proves nothing"; fi
+rm -rf "$params_repo"
+
+# Direction 2: the same override, inherited by run.sh, must not reach any test's git commands.
+assert_exit 0 "run.sh neutralises an inherited GIT_CONFIG_PARAMETERS override" -- \
+  env GIT_CONFIG_PARAMETERS="$hostile_params" \
+      FOREMAN_TESTS_DIR="$hostile_dir/tests" FOREMAN_POLICY="$hostile_dir/none.md" \
+      bash "$rr"
+
+# [T2-M4] The pin replaces the operator's whole global config, which would otherwise silently
+# drop a `safe.directory` entry a WSL or containerised checkout needs just to be usable at all --
+# turning a working checkout into a failing one for exactly the contributor this task exists to
+# help. run.sh must preserve one, not merely avoid mandating signing.
+mkdir -p "$hostile_dir/tests_safe"
+cat > "$hostile_dir/tests_safe/test_fixture.sh" <<'FIXTURE_SAFE'
+#!/usr/bin/env bash
+set -uo pipefail
+source "$FOREMAN_ROOT/tests/lib_assert.sh"
+assert_eq "*" "$(git config --global --get safe.directory 2>/dev/null)" \
+  "the runner preserves a wildcard safe.directory for WSL/containerised checkouts"
+FIXTURE_SAFE
+assert_exit 0 "run.sh pins safe.directory=* for every test's git commands" -- \
+  env FOREMAN_TESTS_DIR="$hostile_dir/tests_safe" FOREMAN_POLICY="$hostile_dir/none.md" bash "$rr"
+
+rm -rf "$hostile_dir"

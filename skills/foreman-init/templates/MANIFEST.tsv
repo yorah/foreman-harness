@@ -2,7 +2,6 @@ template	destination	variables	mode
 CLAUDE.md.tmpl	CLAUDE.md	PROJECT_NAME,ONE_LINER,COMMANDS,ARCHITECTURE,INVARIANTS,DEFAULT_BRANCH	evolve
 AGENTS.md.tmpl	AGENTS.md	PROJECT_NAME	create
 settings.json.tmpl	.claude/settings.json	GATE_PERMISSIONS	evolve
-settings.local.json.tmpl	.claude/settings.local.json	FOREMAN_MARKETPLACE_PATH	evolve
 gitignore-additions.txt	.gitignore	-	evolve
 docs/README.md.tmpl	docs/dev/README.md	PROJECT_NAME	create
 docs/CONTEXT.md.tmpl	docs/dev/CONTEXT.md	PROJECT_NAME	create

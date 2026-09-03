@@ -6,9 +6,13 @@ gate="$FOREMAN_ROOT/scripts/resolve-gate.sh"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 
-# A fake repo and a fake HOME, so the chain is fully controlled.
+# A fake repo and a fake user config dir, so the chain is fully controlled. The user tier is
+# steered through CLAUDE_CONFIG_DIR, the variable Claude Code itself honours, and never by
+# redirecting HOME: on a machine where `jq` is a tool-manager shim (mise, asdf), the shim
+# resolves its binary through HOME, so a fake HOME turns every gate call into an empty result
+# and 88 assertions here go red for a reason that has nothing to do with the gate.
 mkdir -p "$tmp/repo/.claude" "$tmp/home/.claude"
-export HOME="$tmp/home"
+export CLAUDE_CONFIG_DIR="$tmp/home/.claude"
 
 write_user()    { printf '%s\n' "{\"effortLevel\":\"$1\"}" > "$tmp/home/.claude/settings.json"; }
 write_project() { printf '%s\n' "{\"effortLevel\":\"$1\"}" > "$tmp/repo/.claude/settings.json"; }
@@ -121,13 +125,13 @@ assert_eq "unknown" "$(run opus | jq -r .verdict)" \
   "malformed JSON at local tier is unknown, not a fall-through pass"
 assert_eq "2" "$(code opus)" "malformed JSON at local tier exits 2"
 
-# --- fix round 1: unset HOME must not break the chain for repo-scoped tiers
+# --- fix round 1: no user tier at all must not break the chain for repo-scoped tiers
 clear_all; write_project high
 (
-  unset HOME
+  unset HOME CLAUDE_CONFIG_DIR
   assert_eq "pass" "$(run opus | jq -r .verdict)" \
-    "HOME unset still resolves a valid project-tier effort"
-  assert_eq "0" "$(code opus)" "HOME unset with a valid project effort still exits 0"
+    "HOME and CLAUDE_CONFIG_DIR unset still resolves a valid project-tier effort"
+  assert_eq "0" "$(code opus)" "no user tier with a valid project effort still exits 0"
 )
 
 # --- fix round 2: file-level brokenness ends the search too, not just a broken value at a
@@ -280,3 +284,98 @@ assert_eq "refuse" "$(printf '%s' "$omitted_out" | jq -r .verdict)" \
   "--repo omitted still resolves via \$PWD and refuses on the project's low effort"
 assert_contains "$(printf '%s' "$omitted_out" | jq -r .effort_source)" "repo/.claude/settings.json" \
   "--repo omitted reads the project settings, not the user's"
+
+# --- phase A task 1: the user tier is CLAUDE_CONFIG_DIR first, then $HOME/.claude -----------
+# Gate level: the file that answered is the CLAUDE_CONFIG_DIR one, attributed through
+# effort_source, so a chain that silently read $HOME's file cannot pass by coincidence of values.
+clear_all; write_user high
+assert_contains "$(run opus | jq -r .effort_source)" "$tmp/home/.claude/settings.json" \
+  "the user tier that answered is the CLAUDE_CONFIG_DIR file"
+
+# Chain level: foreman_settings_chain is a pure path printer, so its precedence and fallback are
+# asserted on its output directly, in a subshell with a controlled environment. This is
+# deliberately NOT done by pointing the gate at a redirected HOME: that is the shim problem the
+# top of this file describes, and it would make these assertions fail on exactly the machines
+# they exist to protect.
+#
+# chain_all prints the whole chain; the controlled subshell runs nothing but shell builtins and
+# the sourced library, so the modified HOME is never in effect for an external command (the `sed`
+# that selects a single line runs downstream of the pipe, in this file's own environment).
+chain_all() {  # chain_all <CLAUDE_CONFIG_DIR value or -unset-> <HOME value or -unset->
+  (
+    if [ "$1" = "-unset-" ]; then unset CLAUDE_CONFIG_DIR; else export CLAUDE_CONFIG_DIR="$1"; fi
+    if [ "$2" = "-unset-" ]; then unset HOME; else HOME="$2"; fi
+    source "$FOREMAN_ROOT/scripts/lib.sh"
+    foreman_settings_chain /r
+  )
+}
+chain_third() { chain_all "$1" "$2" | sed -n '3p'; }
+repo_tiers="$(printf '%s\n%s' "/r/.claude/settings.local.json" "/r/.claude/settings.json")"
+
+assert_eq "/cfg/settings.json" "$(chain_third /cfg /h)" \
+  "CLAUDE_CONFIG_DIR names the user tier when set, even with HOME set"
+assert_eq "/h/.claude/settings.json" "$(chain_third -unset- /h)" \
+  "without CLAUDE_CONFIG_DIR the user tier is HOME/.claude/settings.json"
+assert_eq "/h/.claude/settings.json" "$(chain_third '' /h)" \
+  "an empty CLAUDE_CONFIG_DIR falls back to HOME rather than yielding /settings.json"
+
+# Fix round 1 [T1-M1]: the third-line assertion below can only speak for the third line -- `sed
+# -n '3p'` prints nothing for a two-line chain and nothing for an empty one alike, so it cannot
+# also vouch for "the two repo tiers are still printed". Its label is narrowed to what it checks,
+# and the clause it used to claim is asserted separately, on the whole output.
+assert_eq "" "$(chain_third -unset- -unset-)" \
+  "with neither variable the chain has no user tier"
+assert_eq "$repo_tiers" "$(chain_all -unset- -unset-)" \
+  "with neither variable the chain is exactly the two repo tiers, in order"
+
+# Fix round 1 [T1-M2]: a non-absolute user-tier directory must never reach the chain (invariant
+# 4: all paths passed between tiers are absolute). It yields no user tier at all -- not a
+# relative path, and not a silent fall back to HOME, which would answer from a file the operator
+# did not point Claude Code at.
+assert_eq "" "$(chain_third relcfg /h)" \
+  "a relative CLAUDE_CONFIG_DIR yields no user tier rather than a relative path"
+assert_eq "$repo_tiers" "$(chain_all relcfg /h)" \
+  "a relative CLAUDE_CONFIG_DIR leaves the two repo tiers intact and adds nothing"
+assert_eq "" "$(chain_third -unset- rel)" \
+  "a relative HOME yields no user tier rather than a relative path"
+
+# No test file in this suite may redirect HOME for a whole file or a whole command scope, the
+# shape the old fixture had. The reason is the shim problem described at the top of this file;
+# the check is here so the next fixture that needs a controlled user tier is steered to
+# CLAUDE_CONFIG_DIR by a red assertion rather than by a code review.
+#
+# Fix round 1 [T1-M3]: the pattern used to be `^export HOME=`, which was narrower than the claim
+# above it -- a column-0 bare `HOME=...` assignment followed by a plain `export HOME` redirects
+# HOME for the rest of the file and slipped through, as did `declare -x HOME=` and an indented
+# `export HOME=`. All of those shapes are matched now:
+#   - a column-0 assignment, with or without an `export` / `declare -x` keyword;
+#   - `export`/`declare -x` of HOME at any indentation, with or without a value (so the
+#     two-line "assign, then export" shape is caught on either of its lines).
+# What is deliberately NOT matched is an indented bare assignment such as chain_all's
+# `HOME="$2"` above: that one is scoped to a subshell that runs no external command, which is
+# the controlled shape this file uses on purpose and the reason the suite survives a fake HOME
+# there. Match one of these in a new fixture and the fix is CLAUDE_CONFIG_DIR, not indentation.
+home_redirect='^(export[[:space:]]+|declare[[:space:]]+-x[[:space:]]+)?HOME='
+home_redirect="$home_redirect"'|^[[:space:]]*(export|declare[[:space:]]+-x)'
+home_redirect="$home_redirect"'[[:space:]]+HOME([=[:space:]]|$)'
+assert_eq "" "$(grep -lE "$home_redirect" "$FOREMAN_ROOT"/tests/test_*.sh 2>/dev/null || true)" \
+  "no test file redirects HOME (use CLAUDE_CONFIG_DIR for the user tier)"
+
+# --- fix round 1 [T1-M2]: no relative path may reach the gate's JSON contract ---------------
+# Gate level, end to end: a relative CLAUDE_CONFIG_DIR that really does hold a readable
+# settings.json with a usable effortLevel must not produce a verdict attributed to a path a
+# caller in another directory cannot resolve. "Cannot determine" (exit 2) is the safe answer;
+# a `refuse` sourced from "relcfg/settings.json" was the reproduced defect.
+clear_all
+mkdir -p "$tmp/relcfg"
+printf '%s\n' '{"effortLevel":"medium"}' > "$tmp/relcfg/settings.json"
+rel_out="$(cd "$tmp" && CLAUDE_CONFIG_DIR=relcfg "$gate" --model opus \
+  --repo "$tmp/repo" 2>/dev/null)"
+rel_code=0
+(cd "$tmp" && CLAUDE_CONFIG_DIR=relcfg "$gate" --model opus --repo "$tmp/repo" >/dev/null 2>&1) \
+  || rel_code=$?
+assert_eq "unknown" "$(printf '%s' "$rel_out" | jq -r .verdict)" \
+  "a relative CLAUDE_CONFIG_DIR is cannot-determine, not a verdict from an unresolvable path"
+assert_eq "2" "$rel_code" "a relative CLAUDE_CONFIG_DIR exits 2"
+assert_eq "" "$(printf '%s' "$rel_out" | grep -F relcfg || true)" \
+  "no relative path appears anywhere in the gate's JSON output"

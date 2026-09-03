@@ -56,11 +56,15 @@ assert_contains "$s" "ln -s CLAUDE.md AGENTS.md" \
 assert_contains "$s" '**`docs/dev/` is fixed, and is not an interview question.**' \
   "Step 3 states the doc home is not negotiable"
 
-# [T9-R5] ~/.claude/plugins/known_marketplaces.json holds user-scope registrations only, and
-# the generated CLAUDE.md tells contributors to register with --scope local, which writes the
-# project's .claude/settings.local.json instead. The lookup is therefore expected to miss.
-assert_contains "$s" "records **user-scope** registrations only" \
-  "the marketplace lookup does not claim to always resolve"
+# [DIST-1] The marketplace is a GitHub source declared in settings.json.tmpl, so generation
+# has no machine-specific path to look up and Step 3 must not send the session to
+# known_marketplaces.json or ask the user for a checkout path.
+assert_not_contains "$s" "known_marketplaces.json" \
+  "Step 3 no longer looks up a marketplace checkout path"
+assert_not_contains "$s" "FOREMAN_MARKETPLACE_PATH" \
+  "Step 3 no longer substitutes a marketplace path variable"
+assert_contains "$sf" "no template needs a machine-specific path" \
+  "Step 3 states why the marketplace source needs no lookup"
 
 # [T9-R6] grep and find both fall into the `||` branch on a path that does not exist, so
 # without this precondition a mistyped scratch path prints a confident double all-clear.
@@ -113,9 +117,7 @@ assert_eq "" "$(templates_path_form "$d/SKILL.md")" \
 assert_eq "" "$(templates_path_form "$c")" \
   "no unrooted templates path in commands/foreman-init.md"
 
-# The three rules a plausible SKILL.md omits, each anchored to the sentence that states it.
-assert_contains "$s" "known_marketplaces.json" \
-  "FOREMAN_MARKETPLACE_PATH is sourced, not invented"
+# The two rules a plausible SKILL.md omits, each anchored to the sentence that states it.
 assert_contains "$s" 'whose **destination** contains' \
   "the manifest carve-out is by destination, not by mode"
 assert_contains "$s" "-name '*{{*'" \

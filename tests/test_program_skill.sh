@@ -102,6 +102,25 @@ assert_contains "$skill" "worktree command; the phase session makes its own" \
 assert_not_contains "$skill" "git worktree add" \
   "the human is not handed a worktree command"
 
+# [T3-M5] this file used to tell the PM "the kickoff's own first step is
+# EnterWorktree(name: ...)" -- the same cross-file contradiction [T3-M1] found in the
+# template, one file over: foreman-phase's actual first step, since [DEP-1], is Step 0's
+# dependency check, not EnterWorktree. A PM that trusts this line writes a self-contained
+# kickoff (SKILL.md:117-118,:160) whose first action is EnterWorktree and which never mentions
+# Step 0 -- the [T3-M1] failure, reached through the PM instead of the template.
+# [T3-M12] the positive needles below are matched with markdown emphasis (`*...*`) stripped
+# from both the extract and the needle, not against the raw asterisks: the load-bearing content
+# is the action/tool-call distinction, not the italics, so a compliant reword that drops the
+# emphasis (e.g. "the kickoff's first action is...") must not redden this test.
+skillf_noemph="$(printf '%s' "$skillf" | tr -d '*')"
+assert_not_contains "$skillf" "kickoff's own first step is \`EnterWorktree" \
+  "the PM is no longer told EnterWorktree is the kickoff's first step (unqualified)"
+assert_contains "$skillf_noemph" \
+  "kickoff's own first action is \`foreman-phase\` Step 0's dependency check" \
+  "the PM is told Step 0's dependency check is the kickoff's first action"
+assert_contains "$skillf_noemph" "its first tool call is \`EnterWorktree" \
+  "the PM is told EnterWorktree is only the kickoff's first tool call, not its first action"
+
 # [C2]: the probe section must name which tree to run in, not merely gesture at worktrees --
 # the tree path itself is the load-bearing token; deleting the naming bullets restores the
 # original defect with a green suite unless this is anchored.
@@ -198,4 +217,65 @@ assert_contains "$statusf" '`planned` means exactly that, so print `planned, not
 for f in "$skillf" "$statusf"; do
   assert_contains "$f" 'must have had a branch' \
     "an absent branch on a phase past planned is still an anomaly, not planned"
+done
+
+# --- [DEP-1] the PM's own dependencies are checked in Step 0, next to the refusal gate --------
+# foreman-program sends the interview to superpowers:brainstorming, the plan to
+# superpowers:writing-plans, and its operating loop to fable:fable-method. The check sits inside
+# Step 0 (before "## Then read exactly three things") so a missing plugin stops the session
+# before it has read STATE.md and formed intentions it cannot carry out.
+step0_line="$(grep -n '^## Step 0 ' "$s" | head -1 | cut -d: -f1)"
+next_line="$(grep -n '^## Then read exactly three things' "$s" | head -1 | cut -d: -f1)"
+if [ -n "$step0_line" ] && [ -n "$next_line" ] && [ "$step0_line" -lt "$next_line" ]; then _ok
+else fail "foreman-program Step 0 precedes the three-file read (got step0=$step0_line next=$next_line)"; fi
+step0_body="$(awk -v a="$step0_line" -v b="$next_line" 'NR>a && NR<b' "$s" | tr '\n' ' ' | tr -s ' ')"
+assert_contains "$step0_body" '### Dependencies' \
+  "Step 0 carries a Dependencies subsection"
+for dep in 'fable:fable-method' 'superpowers:brainstorming' 'superpowers:writing-plans'; do
+  assert_contains "$step0_body" "$dep" "Step 0 names $dep as a dependency"
+done
+# [T3-M3] matched against a lowercased copy, not the raw mixed-case text: the raw form pinned a
+# sentence-initial capital "Do", so an editor who capitalises that sentence -- ordinary English,
+# and exactly what the brief's own Step 3 text did -- broke a green suite over typography with
+# no change in meaning. Lowercasing both sides tests the claim, not its capitalisation.
+step0_body_lc="$(printf '%s' "$step0_body" | tr '[:upper:]' '[:lower:]')"
+assert_contains "$step0_body_lc" 'do not substitute your own procedure' \
+  "Step 0 forbids improvising a missing skill's procedure (case-insensitive)"
+
+# [T3-M4] round 2's review closed detection coverage as a target: substring matching is
+# polarity-blind, so it cannot tell a fallback from a prohibition of that fallback or from a
+# compliant stop -- the same vocabulary marks all three. Proved in-repo, not hypothetically:
+# `references/gate-chain.md:64`'s own compliant sentence, "do not invoke `fable:fable-judge`
+# **yourself**", collided with round 2's bare 'yourself' marker ([T3-M9]), and a compliant
+# resume instruction ("...proceed by starting a fresh phase session") collided with 'proceed
+# by'. Widening the marker list trades one more false negative for one more false positive,
+# and a false positive is the worse failure: the cheapest way back to green is deleting the
+# ruling-reinforcing sentence that tripped it. So this list is not widened again, and is now
+# narrowed past round 2's two collisions rather than left to catch more shapes:
+# "proceed by running" -- the exact phrase both of round 1's defeating mutations used to
+# describe carrying out the missing skill's job in the session's own voice; narrower than bare
+# "proceed by" so a compliant resume instruction ("proceed by starting a fresh session") no
+# longer collides.
+# "yourself:" -- colon-anchored, not bare "yourself": every fallback shape seen across three
+# rounds phrases the self-substitution as "... yourself: <steps>", while this repository's own
+# compliant prohibition at `gate-chain.md:64` ends the sentence with a period ("yourself."), so
+# the colon anchor stops matching it without losing the shapes it was added for.
+# "read its rubric from" -- the literal phrase foreman-init's own *sanctioned* fallback for
+# `claude-md-management` uses; catches a literal copy of the one fallback this program allows
+# into a skill the ruling says must not have one.
+#
+# What this is, stated plainly so the claim below does not outrun it: a tripwire against the
+# specific phrasings named across rounds 1-2, not a detector for the class. A fallback worded
+# around these three phrases passes this check with a green suite -- no content-matching
+# assertion can close that gap, so the rule is enforced by review, not by the gate. Scoped to
+# the `### Dependencies` subsection itself, not the wider Step 0 extract, so this cannot be
+# satisfied by unrelated text in the refusal gate above it -- and, symmetrically, a degraded
+# path written anywhere this skill dispatches to (outside `### Dependencies`) is entirely
+# outside this guard's range.
+deps_line="$(grep -n '^### Dependencies' "$s" | head -1 | cut -d: -f1)"
+deps_body="$(awk -v a="$deps_line" -v b="$next_line" 'NR>a && NR<b' "$s" | tr '\n' ' ' | tr -s ' ')"
+deps_body_lc="$(printf '%s' "$deps_body" | tr '[:upper:]' '[:lower:]')"
+for marker in 'proceed by running' 'yourself:' 'read its rubric from'; do
+  assert_not_contains "$deps_body_lc" "$marker" \
+    "Dependencies subsection does not carry a known self-substitution phrasing (marker: '$marker')"
 done
