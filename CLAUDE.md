@@ -14,8 +14,8 @@ trust that marketplace; answer yes and the plugin installs. If the prompt was de
 dismissed, install by hand with `claude plugin install foreman@foreman`.
 
 `claude plugin list` is the tell: it shows `foreman@foreman` as enabled once the plugin is
-installed, and does not list it before. The repository is `foreman-harness`; the marketplace
-and the plugin inside it are both named `foreman`, which is why the command reads
+installed, and does not list it before. The plugin's own repository is `foreman-harness`; the
+marketplace and the plugin inside it are both named `foreman`, which is why the command reads
 `foreman@foreman`.
 
 ## Commands

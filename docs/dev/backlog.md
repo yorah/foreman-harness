@@ -77,6 +77,15 @@ Format: `- [ ] [source-tag] short description — why deferred, what it needs`
   *lines* even when the entry they describe is already present. The merged file was corrected by
   hand before it landed. `skills/foreman-init/SKILL.md` Step 3 should say what it means.
 
+  Sharpened by phase A task 4 (`[T4-M2]`, reviewer Minor): that task rewrote both comment lines
+  in `gitignore-additions.txt` — the `.claude/settings.local.json` rationale, which cited a
+  marketplace path that no longer exists. So a re-init of any repository initialised before that
+  commit now *certainly* appends the new one-line rationale beside the old two-line one, which is
+  still there and now false. What was a possibility here is a certainty for every
+  already-initialised repository. Task 4 did not work around it: `[T10-1]` is the root cause and
+  is not a template edit, and a template that carried both rationales to dodge a merge defect
+  would ship the false one on purpose. Fix `[T10-1]` by entry, and the duplicate stops.
+
 ---
 
 ## Flushed from the v1 phase ledger — 2026-08-31

@@ -416,6 +416,16 @@ assert_not_contains "$claude_md_tmplf" "--scope local" \
 assert_not_contains "$claude_md_tmplf" "settings.local.json" \
   "CLAUDE.md template no longer describes a machine-specific settings file"
 
+# [T4-M1] This template lands in somebody else's repository, under a heading that describes THAT
+# repository, so a sentence making `foreman-harness` the identity of "the" or "this" repository
+# is a false claim everywhere but here -- and its owner has no way to know it came out wrong.
+# Every mention of the harness repository in the template must be attributed (to the plugin, the
+# marketplace, or the `yorah/` owner) rather than left as the bare subject "the repository".
+# Case-insensitive and optional-backtick so a reworded conflation is caught too.
+assert_eq "" \
+  "$(printf '%s' "$claude_md_tmplf" | grep -oiE '(the|this) repository is `?foreman-harness' || true)" \
+  "CLAUDE.md template never tells a generated repository that it is the harness repository"
+
 # .gitignore's own additions must keep .claude/settings.local.json out of the index. Claude Code
 # writes per-contributor permission grants there on its own; a tracked copy is a line every
 # contributor would fight over on every pull.
