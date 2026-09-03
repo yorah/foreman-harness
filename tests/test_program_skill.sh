@@ -199,3 +199,21 @@ for f in "$skillf" "$statusf"; do
   assert_contains "$f" 'must have had a branch' \
     "an absent branch on a phase past planned is still an anomaly, not planned"
 done
+
+# --- [DEP-1] the PM's own dependencies are checked in Step 0, next to the refusal gate --------
+# foreman-program sends the interview to superpowers:brainstorming, the plan to
+# superpowers:writing-plans, and its operating loop to fable:fable-method. The check sits inside
+# Step 0 (before "## Then read exactly three things") so a missing plugin stops the session
+# before it has read STATE.md and formed intentions it cannot carry out.
+step0_line="$(grep -n '^## Step 0 ' "$s" | head -1 | cut -d: -f1)"
+next_line="$(grep -n '^## Then read exactly three things' "$s" | head -1 | cut -d: -f1)"
+if [ -n "$step0_line" ] && [ -n "$next_line" ] && [ "$step0_line" -lt "$next_line" ]; then _ok
+else fail "foreman-program Step 0 precedes the three-file read (got step0=$step0_line next=$next_line)"; fi
+step0_body="$(awk -v a="$step0_line" -v b="$next_line" 'NR>a && NR<b' "$s" | tr '\n' ' ' | tr -s ' ')"
+assert_contains "$step0_body" '### Dependencies' \
+  "Step 0 carries a Dependencies subsection"
+for dep in 'fable:fable-method' 'superpowers:brainstorming' 'superpowers:writing-plans'; do
+  assert_contains "$step0_body" "$dep" "Step 0 names $dep as a dependency"
+done
+assert_contains "$step0_body" 'do not substitute your own procedure' \
+  "Step 0 forbids improvising a missing skill's procedure"

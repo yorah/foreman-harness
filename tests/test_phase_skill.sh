@@ -347,3 +347,24 @@ assert_contains "$skill" 'If the kickoff names no branch, ask before proceeding'
 # first version of this assertion did.
 assert_not_contains "$(tr '\n' ' ' < "$s" | tr -s ' ')" 'the exact branch name that was created' \
   "the discover-and-report-back wording is gone"
+
+# --- [DEP-1] the skills this one hands work to are checked at entry, not discovered at gate 3 -
+# gate-chain.md dispatches fable:fable-judge (gate 3) and superpowers:finishing-a-development-
+# branch (gate 7). Without a check up front, a session whose operator declined a plugin's trust
+# prompt discovers the gap with a finished branch in hand. The check must name each skill it
+# depends on, must sit before Step 1, and must tell the session to stop rather than improvise.
+step0_line="$(grep -n '^## Step 0 ' "$s" | head -1 | cut -d: -f1)"
+step1_line="$(grep -n '^## Step 1 ' "$s" | head -1 | cut -d: -f1)"
+if [ -n "$step0_line" ] && [ -n "$step1_line" ] && [ "$step0_line" -lt "$step1_line" ]; then _ok
+else fail "foreman-phase has a '## Step 0' heading before '## Step 1' (got step0=$step0_line step1=$step1_line)"; fi
+step0_body="$(awk -v a="$step0_line" -v b="$step1_line" 'NR>a && NR<b' "$s" | tr '\n' ' ' | tr -s ' ')"
+assert_contains "$step0_body" 'fable:fable-judge' \
+  "Step 0 names fable:fable-judge as a dependency"
+assert_contains "$step0_body" 'superpowers:finishing-a-development-branch' \
+  "Step 0 names superpowers:finishing-a-development-branch as a dependency"
+assert_contains "$step0_body" 'fable@fable-method' \
+  "Step 0 names the plugin fable-judge comes from, so the operator knows what to install"
+assert_contains "$step0_body" 'superpowers@claude-plugins-official' \
+  "Step 0 names the plugin the superpowers skills come from"
+assert_contains "$step0_body" 'do not substitute your own procedure' \
+  "Step 0 forbids improvising a missing skill's procedure"

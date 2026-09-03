@@ -58,6 +58,19 @@ The gate passes only when the model is Opus or Fable **and** the effort is at or
 A runtime `/model` override is invisible to this session, so even on a pass, state what you
 read and from where rather than implying certainty you do not have.
 
+### Dependencies
+
+Three skills from other plugins carry parts of this role. The skills available to this session
+(the list the harness puts in your context) must include:
+
+- `fable:fable-method`, from the plugin `fable@fable-method` — your operating loop.
+- `superpowers:brainstorming` and `superpowers:writing-plans`, from the plugin
+  `superpowers@claude-plugins-official` — the spec interview and the plan.
+
+If any is missing, say so, name the plugin, and stop before reading `STATE.md` — **do not
+substitute your own procedure for it**: an improvised interview asks the polite questions and
+skips the expensive ones, which is the drift these skills exist to prevent.
+
 ## Then read exactly three things
 
 `docs/dev/program/STATE.md`, then `docs/dev/program/POLICY.md`, then

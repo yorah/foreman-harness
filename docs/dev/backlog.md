@@ -225,7 +225,7 @@ Critical (spec §9.6) and it was right: a deferral nobody can read is a deletion
   published at `github.com/yorah/foreman-harness`, so the `github` source this needs now exists.
   `settings.json.tmpl` already uses that shape for `fable-method`; copy it for `foreman`.
 
-- [ ] **[DEP-1] `fable-method` and `superpowers` are hard dependencies with no missing-plugin
+- [x] **[DEP-1] `fable-method` and `superpowers` are hard dependencies with no missing-plugin
   path.** `foreman-program` SKILL.md sends the spec interview to `superpowers:brainstorming`
   (:130) and the plan to `superpowers:writing-plans` (:136); `gate-chain.md` dispatches
   `fable:fable-judge` as gate 3 (:64,:73) and `superpowers:finishing-a-development-branch` (:174);
@@ -248,6 +248,10 @@ Critical (spec §9.6) and it was right: a deferral nobody can read is a deletion
   Unrelated, but adjacent enough to confuse a reader of `resolve-gate.sh`: that script's
   `*-fable-*` match is about **Fable the model**, not the `fable-method` plugin. The gate passes
   `claude-fable-5` with `fable-method` not installed at all.
+
+  Closed by phase A task 3: each session skill checks its dependencies at Step 0 and stops
+  cleanly, naming the plugin; no fallbacks, by ruling (a fallback is a second copy of another
+  plugin's procedure).
 
 ### Closed on `fix/triage-and-plan-banner`
 
