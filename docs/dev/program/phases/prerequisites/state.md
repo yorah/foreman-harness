@@ -738,3 +738,42 @@ which is closer to the point of use than a program-level rulings file. The one c
 promotion is `[BR-8]`'s question — whether the vendor-name rule should carry an
 `extraKnownMarketplaces` exception — and that is the program manager's ruling to make, not this
 phase's; it is in the backlog awaiting them.
+
+### Gate 6 — integration: **pull request opened**
+
+`git fetch origin` then `git rebase origin/main`. **`origin/main` had not moved** — still
+`cc489e9`, this branch's own base — so the rebase reported "Current branch feat/prerequisites is
+up to date" and was a no-op. Gate 1 was nonetheless re-run **in full** on the rebased tree, as the
+gate requires: `14 files, 660 passed, 0 failed`, exit 0; `foreman-baseline --policy <abs> --count
+660` → pass, delta 0. The gate's warning that a clean textual merge hides semantic conflicts did
+not get exercised here, because there was nothing to merge — worth stating plainly rather than
+letting a green re-run imply a rebase was survived.
+
+This phase touched two declared trust boundaries, and `POLICY.md`'s integration rule escalates to
+a pull request **always** since 2026-09-02 (spec D5). So: branch pushed, PR opened, **no merge**.
+
+- Branch `feat/prerequisites` pushed to `origin`, 28 commits ahead of `origin/main`.
+- **PR: https://github.com/yorah/foreman-harness/pull/1**, its body carrying the gate evidence —
+  the run counts, the branch-review `GO`, the judge's `VERIFIED WITH CAVEATS`, the backlog and
+  context gates, and the two things a reviewer of the PR most needs to know (the abridged review
+  packages, and the controller-committed fix round).
+
+Both actions are durably authorised and neither needed a fresh `AUTH:` line: `POLICY.md`'s
+Authorization section grants a phase the push of its own branch, and its Integration section
+grants opening the pull request as routine phase integration rather than a fresh outward-facing
+act. The kickoff restates both. `main` is untouched; nothing was force-pushed.
+
+### Gate 7 — close: **deliberately not run**
+
+Ruling: the worktree stays, and `superpowers:finishing-a-development-branch` is left for after the
+merge. — The kickoff ends this phase at the pull request — "Then stop; the program manager merges
+after its probe" — and `STATE.md`'s own next action tells the program manager to probe
+`<repo>/.claude/worktrees/prerequisites` directly (plain `bash tests/run.sh` green at 660, and
+`git ls-files skills/foreman-init/templates/settings.local.json.tmpl` empty). Running the close
+gate now would remove the very thing the next actor is instructed to inspect. Everything gate 7
+exists to protect is already safe for a different reason: Step 4.6 committed the ledger, the
+briefs, the reports and every review file with each task, so they are tracked, they travel with
+the merge, and nothing needs rescuing from the worktree before it goes. — Costs if wrong: a
+worktree lingers until the program manager removes it after merging, which is the cheaper error
+by a wide margin — the alternative deletes the probe target named in the instruction the program
+manager will be following.
