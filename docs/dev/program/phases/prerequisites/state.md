@@ -364,3 +364,55 @@ caution, correctly applied.
 **Uncovered.** Claude Code actually resolving the `github` marketplace source and presenting its
 trust prompt; `/foreman-init` end-to-end generation including the executed `evolve` merge into an
 existing `.claude/settings.json`. Both need a live run this phase may not perform.
+
+## Phase-level finding — the review packages were abridged, and nothing said so
+
+Discovered at task 4's round-1 review, which noticed a truncation marker in its own diff file and
+read the committed file instead. Investigated by the controller rather than accepted as an
+artifact quirk, because it bears on every review this phase ran.
+
+`foreman-phase` Step 4 item 4 specifies the review package as
+`git -C <worktree> diff <base> "$head" > <abs-phase-dir>/task-N-review.diff`. On this machine a
+hook rewrites `git` to `rtk git`, a token-reducing proxy, so that redirection captures rtk's
+**summarised** rendering — a `--- Changes ---` header, per-file stat lines, and a literal
+`... (N lines truncated)` footer — not the diff. Every reviewer in this phase therefore received
+an abridged package, and the shortfall was measured after the fact:
+
+| Package | Delivered | Actual | Withheld |
+|---|---|---|---|
+| task-1-review.diff | 120 | 132 | 12 |
+| task-1-review-1.diff | 189 | 201 | 12 |
+| task-2-review.diff | 77 | 80 | 3 |
+| task-2-review-1.diff | 133 | 136 | 3 |
+| task-3-review.diff | 115 | 130 | 15 |
+| task-3-review-1.diff | 191 | 211 | 20 |
+| task-3-review-2.diff | 287 | 313 | 26 |
+| task-3-review-3.diff | 346 | 372 | 26 |
+| task-4-review.diff | 415 | 475 | 60 |
+| task-4-review-1.diff | 437 | 510 | 73 |
+| **total** | | | **250** |
+
+All ten files have been regenerated raw via `rtk proxy git diff`, which bypasses the filter, and
+none now carries a truncation marker.
+
+Ruling: the task verdicts stand, and the whole-branch review at gate 2 is treated as the first
+complete read of this branch. — Three things keep the verdicts credible: every reviewer
+mutation-checked against the **live tree** rather than reasoning from the diff alone, so its
+evidence came from the real files; the reviews demonstrably found real defects, including one
+Important and the phase's only Not-approved; and the reviewer whose package lost the most
+compensated explicitly. But that compensation is the reason not to stop here — the marker
+disclosed **9** lines while the true loss was **73**, so it patched what it was told about, not
+what was missing. The honest remedy is a complete read of the whole branch, which gate 2 performs
+anyway at Opus, against a raw diff, with this disclosed in its dispatch. — Costs if wrong: a
+defect that lived only in withheld lines survived four task reviews; gate 2 is the backstop and is
+told exactly that.
+
+**This is a defect in the harness itself, and it is the program manager's to fix, not this
+phase's.** `foreman-phase`'s own instruction produces a silently incomplete review package under a
+`git`-rewriting hook — the review looks complete and is not, which is precisely the class of
+silent failure `POLICY.md` cites when it explains why the refusal gate is a trust boundary. The
+fix belongs in the skill's Step 4 text (capture the diff through an invocation the proxy does not
+rewrite, and assert the artifact has no truncation marker before dispatching), which is a
+structural change to the harness and therefore `/foreman-init` or a program decision. Filed for
+the program manager; deliberately **not** patched here, since a phase session does not amend the
+skill it is running.
