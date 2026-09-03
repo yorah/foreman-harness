@@ -266,6 +266,23 @@ assert_contains "$(cat "$t/program/kickoff.md.tmpl" 2>/dev/null || true)" \
   'EnterWorktree(name: "{{PHASE_SLUG}}")' \
   "kickoff template's first step matches what foreman-program promises the PM"
 
+# [T3-M1] the kickoff header's ordering claim must not contradict foreman-phase's own first
+# step. foreman-phase/SKILL.md's own first "## Step N" heading is the ground truth -- a phase
+# session reads the kickoff at dispatch, before it has read the skill, so if the kickoff's
+# header names a later step as first, a session that trusts the header skips the dependency
+# check silently. Deriving the expected step from the skill itself (rather than hard-coding
+# "Step 0") means this goes red again if the skill's first step is ever renumbered and the
+# template is not updated to match -- the cross-file drift POLICY.md's model table warns about.
+kickoff_tmpl="$(cat "$t/program/kickoff.md.tmpl" 2>/dev/null || true)"
+first_step="$(grep -m1 -oE '^## Step [0-9]+' "$FOREMAN_ROOT/skills/foreman-phase/SKILL.md" \
+  | sed 's/^## //')"
+assert_contains "$kickoff_tmpl" "$first_step" \
+  "kickoff template names foreman-phase's actual first step ($first_step)"
+first_pos="$(printf '%s' "$kickoff_tmpl" | grep -bo -- "$first_step" | head -1 | cut -d: -f1)"
+step1a_pos="$(printf '%s' "$kickoff_tmpl" | grep -bo 'Step 1a' | head -1 | cut -d: -f1)"
+if [ -n "$first_pos" ] && [ -n "$step1a_pos" ] && [ "$first_pos" -lt "$step1a_pos" ]; then _ok
+else fail "kickoff template names $first_step before Step 1a (got first=$first_pos step1a=$step1a_pos)"; fi
+
 # settings.json.tmpl must render to exactly one well-formed JSON object and carry the settings
 # other scripts and Claude Code itself depend on. The raw template is not valid JSON on its own
 # ({{GATE_PERMISSIONS}} sits where an array element belongs), so the variable is substituted

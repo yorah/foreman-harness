@@ -215,5 +215,26 @@ assert_contains "$step0_body" '### Dependencies' \
 for dep in 'fable:fable-method' 'superpowers:brainstorming' 'superpowers:writing-plans'; do
   assert_contains "$step0_body" "$dep" "Step 0 names $dep as a dependency"
 done
-assert_contains "$step0_body" 'do not substitute your own procedure' \
-  "Step 0 forbids improvising a missing skill's procedure"
+# [T3-M3] matched against a lowercased copy, not the raw mixed-case text: the raw form pinned a
+# sentence-initial capital "Do", so an editor who capitalises that sentence -- ordinary English,
+# and exactly what the brief's own Step 3 text did -- broke a green suite over typography with
+# no change in meaning. Lowercasing both sides tests the claim, not its capitalisation.
+step0_body_lc="$(printf '%s' "$step0_body" | tr '[:upper:]' '[:lower:]')"
+assert_contains "$step0_body_lc" 'do not substitute your own procedure' \
+  "Step 0 forbids improvising a missing skill's procedure (case-insensitive)"
+
+# [T3-M4] the ruling is "stops cleanly, never a fallback". The assertion above only proves the
+# prohibition sentence is present, and cannot fail if a later edit keeps that sentence and adds
+# a degraded path underneath it. Scoped to the `### Dependencies` subsection itself, not the
+# wider Step 0 extract, so this cannot be satisfied by unrelated text in the refusal gate above
+# it -- and guarded with the marker foreman-init's own *sanctioned* fallback uses for
+# `claude-md-management` ("is not installed, read its rubric from the marketplace cache
+# instead"): if that phrasing shows up here, someone copied the one fallback this program still
+# allows into a skill the ruling says must not have one.
+deps_line="$(grep -n '^### Dependencies' "$s" | head -1 | cut -d: -f1)"
+deps_body="$(awk -v a="$deps_line" -v b="$next_line" 'NR>a && NR<b' "$s" | tr '\n' ' ' | tr -s ' ')"
+deps_body_lc="$(printf '%s' "$deps_body" | tr '[:upper:]' '[:lower:]')"
+assert_not_contains "$deps_body_lc" 'instead' \
+  "Dependencies subsection carries no fallback path (ruling: presence check, never a fallback)"
+assert_not_contains "$deps_body_lc" 'not installed' \
+  "Dependencies subsection carries no not-installed fallback clause"

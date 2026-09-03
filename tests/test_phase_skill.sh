@@ -366,5 +366,21 @@ assert_contains "$step0_body" 'fable@fable-method' \
   "Step 0 names the plugin fable-judge comes from, so the operator knows what to install"
 assert_contains "$step0_body" 'superpowers@claude-plugins-official' \
   "Step 0 names the plugin the superpowers skills come from"
-assert_contains "$step0_body" 'do not substitute your own procedure' \
-  "Step 0 forbids improvising a missing skill's procedure"
+# [T3-M3] matched against a lowercased copy, not the raw mixed-case text: the raw form pinned a
+# sentence-initial capital "Do", so an editor who capitalises that sentence -- ordinary English,
+# and exactly what the brief's own Step 3 text did -- broke a green suite over typography with
+# no change in meaning. Lowercasing both sides tests the claim, not its capitalisation.
+step0_body_lc="$(printf '%s' "$step0_body" | tr '[:upper:]' '[:lower:]')"
+assert_contains "$step0_body_lc" 'do not substitute your own procedure' \
+  "Step 0 forbids improvising a missing skill's procedure (case-insensitive)"
+# [T3-M4] the ruling is "stops cleanly, never a fallback" -- the assertion above only proves the
+# prohibition sentence is present, and cannot fail if a later edit keeps that sentence and adds
+# a degraded path underneath it (the exact drift the ruling exists to prevent). Guard the other
+# direction with the marker foreman-init's own *sanctioned* fallback uses for `claude-md-
+# management` ("is not installed, read its rubric from the marketplace cache instead") -- if
+# that phrasing shows up here, someone copied the one fallback this program still allows into a
+# skill the ruling says must not have one.
+assert_not_contains "$step0_body_lc" 'instead' \
+  "Step 0 carries no fallback path (ruling: presence check only, never a fallback)"
+assert_not_contains "$step0_body_lc" 'not installed' \
+  "Step 0 carries no not-installed fallback clause"

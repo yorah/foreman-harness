@@ -251,7 +251,11 @@ Critical (spec §9.6) and it was right: a deferral nobody can read is a deletion
 
   Closed by phase A task 3: each session skill checks its dependencies at Step 0 and stops
   cleanly, naming the plugin; no fallbacks, by ruling (a fallback is a second copy of another
-  plugin's procedure).
+  plugin's procedure). The fifth reference named above, `plans/plan-README.md.tmpl`'s
+  `superpowers:subagent-driven-development` banner, was not given a check of its own: it ships
+  inside the same `superpowers@claude-plugins-official` plugin that Step 0 already checks via
+  `superpowers:finishing-a-development-branch`, so the failure mode this item describes — a
+  whole plugin absent — is caught regardless. Judged covered, not overlooked.
 
 ### Closed on `fix/triage-and-plan-banner`
 
