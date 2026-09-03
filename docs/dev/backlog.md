@@ -257,6 +257,22 @@ Critical (spec §9.6) and it was right: a deferral nobody can read is a deletion
   `superpowers:finishing-a-development-branch`, so the failure mode this item describes — a
   whole plugin absent — is caught regardless. Judged covered, not overlooked.
 
+  Limit on the "no fallbacks" test coverage, recorded so it outlives the phase report: the
+  tests' `assert_not_contains` markers (`tests/test_phase_skill.sh`,
+  `tests/test_program_skill.sh`) are a tripwire against the specific fallback phrasings named
+  across this task's fix rounds, not a detector for the class — substring matching cannot tell
+  a fallback from a prohibition of one or from a compliant stop (same vocabulary, opposite
+  polarity), proved in-repo when `gate-chain.md:64`'s own compliant sentence collided with an
+  earlier marker. A differently-worded fallback passes the gate green. The rule is enforced by
+  review, not mechanically, and the guard's range is each skill's Step 0 body only — a degraded
+  path written at a dispatch site such as `gate-chain.md`'s gate-3 section is outside it. The
+  only mechanism that would remove the false-negative risk within invariant 1 is a closed-world
+  check over the guarded range — a snapshot pin (compare the normalised Step 0 /
+  `### Dependencies` body against a stored fixture) or a word-count budget — either of which
+  reddens on *any* edit to that range, including a compliant reword, and so trades detection for
+  friction rather than deciding the question. Left unimplemented: a policy choice for a future
+  round, not this task's.
+
 ### Closed on `fix/triage-and-plan-banner`
 
 - **[M-A]** — both triage tables (`skills/foreman-program/SKILL.md`, `commands/program-status.md`)

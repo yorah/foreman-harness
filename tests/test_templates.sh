@@ -254,8 +254,9 @@ assert_contains "$policy_tmpl" "{{PHASE_SCOPE}}" \
 assert_contains "$policy_tmpl" "{{SPEC_LIFECYCLE}}" \
   "POLICY template has a home for the spec-lifecycle answer"
 
-# CLAUDE.md.tmpl's worktree rule authorises the tool every phase session's first action uses
-# (EnterWorktree). Without it, nothing in the generated repo says the tool may be used there.
+# [T3-M11] CLAUDE.md.tmpl's worktree rule authorises the tool every phase session's first tool
+# call uses (EnterWorktree, since [DEP-1] Step 0's dependency check precedes it). Without this
+# rule, nothing in the generated repo says the tool may be used there.
 assert_contains "$(cat "$t/CLAUDE.md.tmpl" 2>/dev/null || true)" \
   "**This repository works in git worktrees.**" \
   "CLAUDE.md template states the worktree rule foreman-program relies on"
