@@ -6,6 +6,12 @@
     "claude-md-management@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
+    "foreman": {
+      "source": {
+        "source": "github",
+        "repo": "yorah/foreman-harness"
+      }
+    },
     "fable-method": {
       "source": {
         "source": "github",

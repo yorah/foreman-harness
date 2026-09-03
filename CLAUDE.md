@@ -7,28 +7,16 @@ their own worktree, and task subagents that write the code.
 ## Setup
 
 Workflow commands (`/foreman-init`, `/program`, `/phase`, `/program-status`) come from the
-`foreman` plugin. `.claude/settings.json` enables it but does not say where to find it on
-disk — that lives in `.claude/settings.local.json`, gitignored because the path differs per
-contributor's checkout. Cloning this repository does not create that file for you; generate
-your own, once, with `claude plugin marketplace add <path-to-your-checkout-of-the-foreman-plugin-repo> --scope local`.
+`foreman` plugin. The tracked `.claude/settings.json` both enables it and declares where it
+comes from: a GitHub marketplace, `yorah/foreman-harness`. A fresh clone therefore needs no
+path and no second settings file. On first start in this repository Claude Code asks whether to
+trust that marketplace; answer yes and the plugin installs. If the prompt was declined or
+dismissed, install by hand with `claude plugin install foreman@foreman`.
 
-`<path-to-your-checkout-of-the-foreman-plugin-repo>` is a checkout of the `foreman` plugin
-repository — a separate project from this one (the source of its `.claude-plugin/marketplace.json`),
-distributed as a local directory rather than a registry package. If you already have it
-registered on this machine for another project, its path is recorded in
-`~/.claude/plugins/known_marketplaces.json` under the `foreman` entry's `source.path`.
-Otherwise, get your own checkout from whoever maintains it for this project and use that path.
-What this must **not** be is a path under `~/.claude/plugins/cache/`: that is wherever a given
-installation was resolved from, version-pinned, and not something a second contributor can
-pull from.
-
-If you skip the step above, `claude plugin marketplace list` shows no `foreman` entry — that
-absence is the tell. `claude plugin list` is **not** the tell: it prints `No plugins installed`
-before this step and after it alike, because it reports what has been installed, not what
-marketplaces are known. Registering the marketplace only makes the plugin resolvable;
-`claude plugin install foreman@foreman` is the step that actually installs it, and only then
-does `claude plugin list` show `foreman@foreman` as enabled, even though `.claude/settings.json`
-already said so.
+`claude plugin list` is the tell: it shows `foreman@foreman` as enabled once the plugin is
+installed, and does not list it before. The repository is `foreman-harness`; the marketplace
+and the plugin inside it are both named `foreman`, which is why the command reads
+`foreman@foreman`.
 
 ## Commands
 

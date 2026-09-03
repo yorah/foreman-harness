@@ -110,11 +110,7 @@ For each remaining row:
 - `mode: evolve` — merge with what exists. For `CLAUDE.md` this means keeping the project's
   own content and voice and folding in the missing sections, not replacing the file. For
   `.gitignore` and `.claude/settings.json` it means adding what is absent and touching nothing
-  else. `.claude/settings.local.json` is a fourth evolve destination and behaves differently
-  from the other three: it is **untracked** (the `.gitignore` additions put it there), it is
-  per-contributor, and it usually does not exist yet — so evolving it means creating it if
-  absent and otherwise adding only the missing `extraKnownMarketplaces.foreman` key. Never
-  overwrite a contributor's other local settings, and never commit this file.
+  else.
 
 `AGENTS.md` is the one `create` row whose *content* the interview can change, so honour the
 answer instead of emitting the template unconditionally:
@@ -133,26 +129,9 @@ variable that could point the layout elsewhere. If the audit found a conflicting
 convention, say so in the Step 5 summary and leave the existing tree where it is — but do not
 ask the user to choose a home that generation cannot honour.
 
-Substitute every `{{VARIABLE}}` from the audit and the interview — with one exception.
-`{{FOREMAN_MARKETPLACE_PATH}}` comes from neither: it is the local checkout of the harness
-marketplace, recorded on this machine at
-
-```bash
-jq -r '.foreman.source.path // empty' ~/.claude/plugins/known_marketplaces.json
-```
-
-That file records **user-scope** registrations only. A contributor who followed the generated
-`CLAUDE.md` and ran `claude plugin marketplace add … --scope local` registered into the
-project's own `.claude/settings.local.json` instead, and will not appear here — so expect the
-lookup to come back empty more often than not.
-
-If it prints nothing, the marketplace is not registered at user scope here — **ask the user for
-the path**; do not invent one, and in particular do not substitute the plugin's own root
-(`$(foreman-root)`) for it. Those are two different things: the marketplace path must be the
-**source checkout** a contributor can pull, and the plugin root is wherever this installation
-happens to be resolved from, which for a cached install is a version-pinned copy under
-`~/.claude/plugins/cache/`. The value written into `settings.local.json` must be the source
-checkout.
+Substitute every `{{VARIABLE}}` from the audit and the interview. The `foreman` marketplace
+is a GitHub source declared in `settings.json.tmpl`, so no template needs a machine-specific
+path and nothing is looked up outside the repository being initialised.
 
 **A `{{` surviving into the scratch tree is a defect** — and it can survive in a *path* as well
 as in a file's contents, which is the harder half to see. Check both before continuing:
@@ -211,12 +190,10 @@ and why.
 so, re-emit and show the diff again.
 
 On approval: copy the scratch tree over the repository, then `git add` **the tracked files
-only**. `.claude/settings.local.json` is deliberately ignored — write it, and leave it
-untracked. Stage with `git add -A` (which honours `.gitignore`) or by naming paths; never
+only**: stage with `git add -A` (which honours `.gitignore`) or by naming paths; never
 `git add -f`. Commit with a message naming the harness version — the `version` field of
 `$(foreman-root)/.claude-plugin/plugin.json`, which is on the plugin side, not in the
 repository being initialised.
 
-Confirm before claiming success: `git status --short` shows the local settings file as ignored
-or absent from the index, and every other generated file staged. Then print the first launch
-block: `/program`.
+Confirm before claiming success: `git status --short` shows every generated file staged and
+nothing ignored by `.gitignore` in the index. Then print the first launch block: `/program`.

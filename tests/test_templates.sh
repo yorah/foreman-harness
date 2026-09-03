@@ -163,7 +163,6 @@ done <<'TABLE'
 CLAUDE.md evolve
 AGENTS.md create
 .claude/settings.json evolve
-.claude/settings.local.json evolve
 .gitignore evolve
 docs/dev/README.md create
 docs/dev/CONTEXT.md create
@@ -179,6 +178,10 @@ docs/dev/plans/{{PLAN_SLUG}}/task-{{TASK_NUMBER}}.md create
 docs/dev/specs/{{TODAY}}-{{TOPIC}}.md create
 TABLE
 assert_eq "" "$dest_mode_errs" "every manifest destination is covered with the right mode"
+
+# [DIST-1] The reverse direction the loop above lacks, for the one row this phase removed.
+assert_eq "0" "$(awk -F'\t' 'NR>1 && $2==".claude/settings.local.json"{n++} END{print n+0}' "$mf")" \
+  "MANIFEST.tsv has no settings.local.json row: the marketplace source is tracked, not local"
 
 # POLICY must carry the machine-readable baseline line baseline-check.sh reads -- anchored to
 # the exact shape of the line itself (leading space, the literal placeholder, nothing trailing),
@@ -378,69 +381,47 @@ assert_eq "Sahir619/fable-method" \
 assert_eq "high" "$(printf '%s' "$rendered_full" | jq -r '.effortLevel' 2>/dev/null)" \
   "settings.json.tmpl sets effortLevel so the repo answers resolve-gate.sh for itself"
 
-# settings.local.json.tmpl carries foreman@foreman's local-directory marketplace source. This
-# is machine-specific ({{FOREMAN_MARKETPLACE_PATH}} is an absolute path unique to whoever
-# generated the repo) and settings.local.json.tmpl is the untracked file per contributor --
-# see gitignore-additions.txt -- so committing it into settings.json would make every
-# contributor fight over the line on every pull.
-local_settings_tmpl="$(cat "$t/settings.local.json.tmpl" 2>/dev/null || true)"
-assert_eq "1" \
-  "$(printf '%s' "$local_settings_tmpl" | grep -c '{{FOREMAN_MARKETPLACE_PATH}}' || true)" \
-  "settings.local.json.tmpl's raw template still carries the {{FOREMAN_MARKETPLACE_PATH}} placeholder"
-rendered_local="$(printf '%s\n' "$local_settings_tmpl" | sed 's#{{FOREMAN_MARKETPLACE_PATH}}#/home/x/repo#')"
-is_one_object="false"
-printf '%s' "$rendered_local" | jq -s -e 'length == 1 and (.[0] | type == "object")' \
-  >/dev/null 2>&1 && is_one_object="true"
-assert_eq "true" "$is_one_object" "settings.local.json.tmpl renders to exactly one JSON object"
-assert_eq "directory" \
-  "$(printf '%s' "$rendered_local" | jq -r '.extraKnownMarketplaces.foreman.source.source' 2>/dev/null)" \
-  "settings.local.json.tmpl declares the foreman marketplace as a local directory source"
-assert_eq "/home/x/repo" \
-  "$(printf '%s' "$rendered_local" | jq -r '.extraKnownMarketplaces.foreman.source.path' 2>/dev/null)" \
-  "settings.local.json.tmpl's harness marketplace path is the substituted {{FOREMAN_MARKETPLACE_PATH}}"
+# [DIST-1] The foreman marketplace is a GitHub source in the TRACKED settings.json, the same
+# shape fable-method already uses. A directory source carried a machine-specific absolute
+# path, which forced a second, untracked settings file and meant a cloned repository enabled
+# a plugin Claude Code could not locate. Now a clone needs only the trust prompt.
+assert_eq "github" \
+  "$(printf '%s' "$rendered_full" | jq -r '.extraKnownMarketplaces.foreman.source.source' 2>/dev/null)" \
+  "settings.json.tmpl declares the foreman marketplace as a github source"
+assert_eq "yorah/foreman-harness" \
+  "$(printf '%s' "$rendered_full" | jq -r '.extraKnownMarketplaces.foreman.source.repo' 2>/dev/null)" \
+  "settings.json.tmpl's foreman marketplace names the published harness repository"
+if [ ! -e "$t/settings.local.json.tmpl" ]; then _ok
+else fail "settings.local.json.tmpl still exists; the local marketplace source is retired"; fi
+assert_eq "" "$(grep -rl 'FOREMAN_MARKETPLACE_PATH' "$t" 2>/dev/null || true)" \
+  "no template carries a machine-specific marketplace path"
 
-# settings.local.json.tmpl is gitignored (see below), so cloning a generated repo does not
-# create it -- nothing else planted a way for a second contributor to learn that. CLAUDE.md is
-# the file every session reads regardless of whether the plugin loaded, so it is the one place
-# that can still speak once the plugin itself has gone silent. Anchored to the actual fix
-# command (`--scope local` is what makes the CLI write .claude/settings.local.json in this
-# exact shape, verified empirically against Claude Code 2.1.251) and to the actual tell
-# (`claude plugin marketplace list`), not just to the word "setup".
+# The generated CLAUDE.md is the one file every session reads whether or not the plugin
+# loaded, so it is where a contributor learns how the plugin arrives: the tracked settings
+# declare a GitHub marketplace, Claude Code asks to trust it on first start, and if that was
+# declined `claude plugin install foreman@foreman` is the manual step. It must not send
+# anyone to a local checkout path or to known_marketplaces.json any more.
 claude_md_tmpl="$(cat "$t/CLAUDE.md.tmpl" 2>/dev/null || true)"
-assert_contains "$claude_md_tmpl" "claude plugin marketplace add" \
-  "CLAUDE.md template tells a new contributor the command that resolves the foreman marketplace"
-assert_contains "$claude_md_tmpl" "--scope local" \
-  "CLAUDE.md template's contributor command targets local scope, matching settings.local.json.tmpl's shape"
+claude_md_tmplf="$(printf '%s' "$claude_md_tmpl" | tr '\n' ' ' | tr -s ' ')"
+assert_contains "$claude_md_tmplf" "claude plugin install foreman@foreman" \
+  "CLAUDE.md template names the manual install command"
+assert_contains "$claude_md_tmplf" "asks whether to trust that marketplace" \
+  "CLAUDE.md template explains the trust prompt a fresh clone sees"
+assert_contains "$claude_md_tmplf" "claude plugin list" \
+  "CLAUDE.md template names claude plugin list as the tell that the plugin is installed"
+assert_not_contains "$claude_md_tmplf" "known_marketplaces.json" \
+  "CLAUDE.md template no longer sends contributors to known_marketplaces.json"
+assert_not_contains "$claude_md_tmplf" "--scope local" \
+  "CLAUDE.md template no longer registers a local-directory marketplace"
+assert_not_contains "$claude_md_tmplf" "settings.local.json" \
+  "CLAUDE.md template no longer describes a machine-specific settings file"
 
-# The path a contributor must supply must be resolvable from the generated repository alone --
-# a contributor cloning it has no other way to learn what "the harness plugin repo" is or where
-# their own checkout of it might already be registered. Anchored to the actual lookup
-# (known_marketplaces.json's harness.source.path, verified empirically against CC 2.1.251 --
-# see settings.local.json.tmpl's own marketplace-list output) and to the wrong source the
-# reviewer ruled out ($CLAUDE_PLUGIN_ROOT resolves to a version-pinned, upgrade-volatile cache
-# copy, not a stable checkout path).
-assert_contains "$claude_md_tmpl" "known_marketplaces.json" \
-  "CLAUDE.md template names where a contributor can look up an already-registered harness checkout path"
-assert_contains "$claude_md_tmpl" '~/.claude/plugins/cache/' \
-  "CLAUDE.md template names the plugin cache as the wrong source for the checkout path"
-
-# claude plugin list is not diagnostic for the marketplace-add step: reproduced against CC
-# 2.1.251, it prints "No plugins installed" before the marketplace is registered locally and
-# after, identically -- only claude plugin marketplace list changes (it lists no entries before,
-# and a "harness" directory entry after). The template must say what the diagnostic tell
-# actually is, and must not claim claude plugin list is it.
-assert_contains "$claude_md_tmpl" "claude plugin marketplace list" \
-  "CLAUDE.md template names claude plugin marketplace list as the tell that distinguishes an unregistered marketplace from a registered one"
-assert_contains "$claude_md_tmpl" "claude plugin list" \
-  "CLAUDE.md template still discusses claude plugin list, to explain why it is not the tell"
-assert_contains "$claude_md_tmpl" "claude plugin install foreman@foreman" \
-  "CLAUDE.md template names the actual missing step (claude plugin install) that claude plugin list does react to"
-
-# .gitignore's own additions must actually exclude the file above -- otherwise the previous
-# assertions describe a file every contributor still fights over.
+# .gitignore's own additions must keep .claude/settings.local.json out of the index. Claude Code
+# writes per-contributor permission grants there on its own; a tracked copy is a line every
+# contributor would fight over on every pull.
 assert_contains "$(cat "$t/gitignore-additions.txt" 2>/dev/null || true)" \
   ".claude/settings.local.json" \
-  "gitignore-additions.txt excludes the machine-specific settings.local.json"
+  "gitignore-additions.txt keeps the per-contributor settings.local.json untracked"
 
 # gitignore-additions.txt's other purpose -- excluding regenerable review diff packages -- had
 # no assertion; renaming or dropping *.diff left the suite green.

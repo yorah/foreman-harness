@@ -7,7 +7,7 @@ Format: `- [ ] [source-tag] short description — why deferred, what it needs`
 
 ## Open
 
-- [ ] [T8-I15] `.claude/settings.local.json` is an undeclared spec deviation. Task 8's template
+- [x] [T8-I15] `.claude/settings.local.json` is an undeclared spec deviation. Task 8's template
   manifest (`skills/foreman-init/templates/MANIFEST.tsv`) splits generated-repository settings
   across two files: the tracked `.claude/settings.json` and a new, gitignored
   `.claude/settings.local.json` carrying `{{FOREMAN_MARKETPLACE_PATH}}`
@@ -35,6 +35,10 @@ Format: `- [ ] [source-tag] short description — why deferred, what it needs`
   silently outrank the tracked `effortLevel` pin `docs/dev/program/POLICY.md.tmpl` promises all
   three tiers (`[T8-I16]`, fixed in fix round 4 by qualifying that promise rather than changing
   `resolve-gate.sh`'s read order).
+
+  Closed by phase A task 4: the foreman marketplace is a GitHub source in the tracked
+  settings.json; settings.local.json.tmpl, its manifest row and the known_marketplaces.json
+  lookup are gone.
 
 - [ ] [T9-R7] Four templates are orphaned: nothing instantiates them. `MANIFEST.tsv`'s four
   `{{`-bearing destinations — `program/kickoff.md.tmpl`, `plans/plan-README.md.tmpl`,
@@ -200,7 +204,7 @@ Critical (spec §9.6) and it was right: a deferral nobody can read is a deletion
 
 ### Found after the v1 merge
 
-- [ ] **[DIST-1] The plugin is distributed as a local directory, so a generated repository
+- [x] **[DIST-1] The plugin is distributed as a local directory, so a generated repository
   cannot be handed to a second person by pushing it.** `templates/settings.local.json.tmpl`
   registers the `foreman` marketplace with `"source": "directory"` and
   `{{FOREMAN_MARKETPLACE_PATH}}` — an absolute path into the generating contributor's own
@@ -224,6 +228,10 @@ Critical (spec §9.6) and it was right: a deferral nobody can read is a deletion
   once the source is a repo rather than a directory. **No longer blocked**: the harness is
   published at `github.com/yorah/foreman-harness`, so the `github` source this needs now exists.
   `settings.json.tmpl` already uses that shape for `fable-method`; copy it for `foreman`.
+
+  Closed by phase A task 4: the foreman marketplace is a GitHub source in the tracked
+  settings.json; settings.local.json.tmpl, its manifest row and the known_marketplaces.json
+  lookup are gone.
 
 - [x] **[DEP-1] `fable-method` and `superpowers` are hard dependencies with no missing-plugin
   path.** `foreman-program` SKILL.md sends the spec interview to `superpowers:brainstorming`

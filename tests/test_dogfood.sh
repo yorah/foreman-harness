@@ -24,7 +24,7 @@ gen_files=""
 for f in CLAUDE.md AGENTS.md docs/dev/README.md docs/dev/CONTEXT.md \
          docs/dev/program/POLICY.md docs/dev/program/STATE.md \
          docs/dev/program/RULINGS.md docs/dev/program/DEFERRED.md \
-         docs/dev/program/HISTORY.md .claude/settings.json .claude/settings.local.json; do
+         docs/dev/program/HISTORY.md .claude/settings.json; do
   [ -f "$R/$f" ] && gen_files="$gen_files $R/$f"
 done
 # /dev/null is a sentinel operand: with no generated files yet, `$gen_files` is empty and a
@@ -73,6 +73,12 @@ for p in "foreman@foreman" "superpowers@claude-plugins-official" "fable@fable-me
     "settings enable $p"
 done
 assert_eq "fresh" "$(jq -r '.worktree.baseRef' "$s" 2>/dev/null)" "worktree base ref is fresh"
+assert_eq "github" "$(jq -r '.extraKnownMarketplaces.foreman.source.source' "$s" 2>/dev/null)" \
+  "this repository's own settings declare the foreman marketplace as a github source"
+assert_eq "yorah/foreman-harness" "$(jq -r '.extraKnownMarketplaces.foreman.source.repo' "$s" 2>/dev/null)" \
+  "this repository's own settings name the published harness repository"
+assert_not_contains "$(cat "$R/CLAUDE.md" 2>/dev/null || true)" "known_marketplaces.json" \
+  "this repository's CLAUDE.md no longer sends contributors to known_marketplaces.json"
 
 # --- CLAUDE.md carries what the harness needs it to -----------------------
 c="$(cat "$R/CLAUDE.md" 2>/dev/null || true)"

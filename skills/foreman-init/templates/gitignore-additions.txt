@@ -1,8 +1,7 @@
-# Harness: regenerable review diff packages, and the machine-specific settings file below.
+# Harness: regenerable review diff packages, and the per-contributor settings file below.
 # Everything else the harness writes is tracked on purpose — a ledger a second person cannot
 # read is not a ledger.
 *.diff
 
-# Machine-specific: a local absolute path that differs per contributor's checkout. Committing
-# it would make every contributor fight over this line on every pull; each generates their own.
+# Per-contributor: Claude Code writes local permission grants here. Never shared, never tracked.
 .claude/settings.local.json
