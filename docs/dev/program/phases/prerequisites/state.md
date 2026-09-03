@@ -6,7 +6,7 @@ baseline: 610 at cc489e9a0f0be85829ba288cf089ba28037fdcbb
 tasks:
   - {n: 1, model: opus, effort: high, status: passed, commits: "13dce8e..0c6f90d", verdict: "Spec ✅ / Quality Approved", minors: [T1-M4, T1-M5]}
   - {n: 2, model: sonnet, effort: medium, status: passed, commits: "8273545..57f5323", verdict: "Spec ✅ / Quality Approved", minors: [T2-R1-M1, T2-R1-M2, T2-R1-M3, T2-R1-M4]}
-  - {n: 3, model: sonnet, effort: medium, status: pending, commits: "", verdict: "", minors: []}
+  - {n: 3, model: sonnet, effort: medium, status: in-progress, commits: "", verdict: "", minors: []}
   - {n: 4, model: opus, effort: high, status: pending, commits: "", verdict: "", minors: []}
 ---
 
