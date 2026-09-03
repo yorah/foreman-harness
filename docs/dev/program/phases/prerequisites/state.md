@@ -672,3 +672,32 @@ gate 4, which is the next gate and is blocking. None of the seven asserts that a
 branch is *false*; they assert that four of them are **not provable from the repository alone**,
 which is a different and honest thing for a judge to say. — Costs if wrong: the branch merges
 carrying four unprovable-by-re-execution claims, each named, each in the backlog.
+
+### Gate 4 — backlog flush: **passed** (blocking)
+
+Twenty-four deferred items written to `docs/dev/backlog.md` under a new dated section, each
+tagged, each with why it was deferred and what it needs: the twelve task Minors, nine carried
+branch-review findings (`[BR-3]`–`[BR-8]`, `[BR-11]`–`[BR-13]`), and three judge caveats that
+outlive the branch (`[JUDGE-1]`–`[JUDGE-3]`).
+
+Verified mechanically rather than by eye, because this gate's rule is absolute — "you may not
+finish while the ledger names a deferred item absent from the backlog": every tag the ledger
+defers was grepped in `backlog.md`. **24 present, 0 missing.** `[BR-1]`, `[BR-2]`, `[BR-9]` and
+`[BR-10]` deliberately do *not* appear as open items — they were fixed in-branch at gate 2 and are
+named only in prose recording that, confirmed by checking no `- [ ]` line carries them.
+
+`[T3-M13]` needed tagging rather than adding: it was already in the backlog as **untagged prose**
+inside the `[DEP-1]` closure, which is why the branch reviewer counted it as unflushed. A
+deferred item nobody can grep for is one nobody will find, so the tag was inserted in place.
+
+Three entries were written up rather than one-lined, because their weight is not obvious from a
+tag:
+
+- `[T2-R1-M4]`, the `GIT_DIR` residual — the heaviest item in the flush and roughly one line to
+  fix. The suite can commit into a repository outside itself and report a nearly-clean run.
+- `[BR-3]`, no assertion over a *rendered* kickoff — the structural gap that let `[BR-1]` ship
+  green, and the reason the next drift of that class will also ship green.
+- `[JUDGE-1]`, the abridging proxy hook — still live, affecting every future phase until
+  `foreman-phase` Step 4 changes.
+
+Gate 1 re-run after the flush: `14 files, 660 passed, 0 failed`, exit 0.

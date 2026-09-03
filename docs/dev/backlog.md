@@ -284,11 +284,12 @@ Critical (spec §9.6) and it was right: a deferral nobody can read is a deletion
   review, not mechanically, and the guard's range is each skill's Step 0 body only — a degraded
   path written at a dispatch site such as `gate-chain.md`'s gate-3 section is outside it. The
   only mechanism that would remove the false-negative risk within invariant 1 is a closed-world
-  check over the guarded range — a snapshot pin (compare the normalised Step 0 /
+  check over the guarded range — **`[T3-M13]`** — a snapshot pin (compare the normalised Step 0 /
   `### Dependencies` body against a stored fixture) or a word-count budget — either of which
   reddens on *any* edit to that range, including a compliant reword, and so trades detection for
   friction rather than deciding the question. Left unimplemented: a policy choice for a future
-  round, not this task's.
+  round, not this task's. Tagged at phase A's gate 4, which found this recorded as untagged prose
+  — a deferred item nobody can grep for is one nobody will find.
 
 ### Closed on `fix/triage-and-plan-banner`
 
@@ -319,3 +320,124 @@ Critical (spec §9.6) and it was right: a deferral nobody can read is a deletion
   assertion that no bare form survives in `skills/`, `commands/`, templates, `README.md`. Skills
   and templates, so an Opus reviewer. Candidate for phase B, which already rewrites the same
   files for the layout change.
+
+## Flushed from the phase A ledger — 2026-09-03
+
+Phase `prerequisites`, branch `feat/prerequisites`. Twelve task Minors and the branch review's
+carried findings. Two independent checks — the whole-branch reviewer and the judge — confirmed
+none of these had reached this file before gate 4, because gate 4 had never been reached.
+
+### Task 1 — settings tier through `CLAUDE_CONFIG_DIR`
+
+- [ ] [T1-M4] The `no test file redirects HOME` guard misses indented per-command redirect shapes
+  (`  HOME=/x cmd`, `env HOME=`, `readonly`/`typeset -x`) while its opening clause claims
+  whole-command scope — deferred as a Minor after the verdict pair came back Approved. Needs the
+  regex widened to those shapes plus a mutation per shape. This guard protects every future test
+  file from reintroducing the `HOME` redirect task 1 removed, so an uncovered shape is a hole in
+  a hole-detector.
+- [ ] [T1-M5] A user tier dropped for being non-absolute is invisible in the gate's `reason`,
+  which still reads "no effortLevel found in any settings file" — deferred as diagnosability, not
+  correctness. Needs a distinct reason string and an assertion for it. Until then a contributor
+  with a relative `CLAUDE_CONFIG_DIR` is told their settings file has no `effortLevel` when the
+  truth is that their tier was discarded.
+
+### Task 2 — the runner pins git configuration
+
+- [ ] [T2-R1-M1] The `GIT_CONFIG_COUNT` half of the runner's `unset` has no assertion — dropping
+  it still leaves the suite at 628/0. Needs an assertion that reddens when that half is removed.
+  Half of the isolation is currently unguarded against regression.
+- [ ] [T2-R1-M2] The new `GIT_CONFIG_PARAMETERS` assertion re-creates the opacity `[T2-M3]` was
+  raised about — two claims in one assertion, so a failure does not say which broke. Needs
+  splitting.
+- [ ] [T2-R1-M3] The runner comment's phrase "file-based config resolution" sweeps in local and
+  worktree scope, which the pin does not govern. Needs the comment narrowed to what is pinned —
+  the third instance in this phase of text claiming more than the mechanism delivers.
+- [ ] [T2-R1-M4] **`GIT_DIR` residual — the heaviest item in this flush, and one line to fix.**
+  The reviewer reproduced the suite **committing five branches into a victim repository while
+  reporting 624 passed, 4 failed**. With `GIT_DIR` set in the environment, the suite writes into
+  a repository outside itself and reports a nearly-clean run while doing it. Pre-existing and
+  outside task 2's brief, so correctly not fixed there. Needs `GIT_DIR` (and `GIT_WORK_TREE`,
+  `GIT_INDEX_FILE`) added to the runner's existing unset, plus an assertion in both directions.
+  Do not let this sit at the weight of a comment nit.
+
+### Task 3 — `[DEP-1]` dependency check at skill entry
+
+- [ ] [T3-M13] Tagged in place above, in the `[DEP-1]` closure: the closed-world alternative
+  (snapshot pin or word budget over the guarded range) that would remove the false-negative risk
+  within invariant 1, recorded deliberately unimplemented as a policy choice for a future phase.
+- [ ] [T3-M14] The backlog's range sentence overstates the program-side range — Step 0 body
+  versus the `### Dependencies` subsection. Needs the sentence corrected to the actual range.
+- [ ] [T3-M15] `[T3-M12]` de-italicised the positive needles only, so an *italicised*
+  reintroduction of the wrong primacy claim still passes green. The "what a phase does first"
+  class therefore remains unguarded against one formatting variant. Needs the needles matched
+  against a markup-normalised copy.
+
+### Task 4 — `[DIST-1]` GitHub marketplace source
+
+- [ ] [T4R1-M1] The `[T4-M1]` guard's comment and label overclaim its reach — a reworded
+  conflation of this repository's identity with a generated one ships green. Needs the label
+  narrowed to what it checks, or the check widened to the claim.
+- [ ] [T4R1-M2] The dogfood `--scope local` needle matches the raw haystack, so a line-wrapped
+  reintroduction escapes it. Needs the whitespace-flattened `flow` treatment — the plan's own
+  "assert meaning, not line breaks" constraint, violated in a test written to enforce it.
+- [ ] [T4R1-M3] The `[T10-1]` note understates the duplication: two new lines beside three stale
+  ones, not one beside two. Needs the count corrected.
+
+### From the whole-branch review (gate 2)
+
+`[BR-1]` and `[BR-2]`, both Important, were fixed in-branch (`e99c22a`) rather than deferred, as
+were `[BR-9]` and `[BR-10]`, which were inaccuracies in the controller's own ledger claims.
+
+- [ ] [BR-3] **No assertion checks a rendered kickoff** — only the template. This is the
+  structural gap that let `[BR-1]` ship green: the phase's own kickoff went on telling a
+  resuming session that Step 1a comes first, past the `[DEP-1]` Step 0 check, and nothing in the
+  suite could notice. Needs an assertion over `docs/dev/program/phases/*/kickoff.md`, not just
+  `kickoff.md.tmpl`. Highest-value item in this section — it is the reason the next drift of this
+  class will also ship green.
+- [ ] [BR-4] Two `[DIST-1]` needles are non-discriminating, and `"claude plugin list"`'s label
+  asserts the opposite polarity of what the pre-fix template said. Needs both needles made
+  discriminating and the label corrected.
+- [ ] [BR-5] `no template carries a machine-specific marketplace path` checks one literal
+  variable name, so any other spelling of the same mistake passes. Needs widening.
+- [ ] [BR-6] `foreman-init/SKILL.md`'s `evolve` bullet lost the only prose naming key-level merge
+  semantics when the obligation moved to a tracked file. Given that `evolve`'s guarantee for
+  `.claude/settings.json` rests entirely on prose (nothing consumes the manifest), losing the
+  prose that states it is worse than it sounds. Needs the semantics restated.
+- [ ] [BR-7] The `[DEP-1]` disclosure states its limit four times and its residual value once, so
+  **deletion looks free** to a future editor. This is the underclaiming failure the controller
+  explicitly asked round 3's reviewer to watch for, introduced one round later anyway. Needs the
+  residual value stated once, plainly, beside the limit.
+- [ ] [BR-8] Vendor-name rule: `Sahir619/fable-method` is pre-existing and sits inside `skills/`.
+  The reviewer recommends **widening the exception to `extraKnownMarketplaces`** rather than
+  enforcing the rule against it — a marketplace source has to name a real repository. A
+  program-level ruling, not a phase edit.
+- [ ] [BR-11] `foreman-phase/SKILL.md`'s `Step 0 — … before anything else` sits below an
+  `Announce:` instruction, so the skill's own text contradicts its ordering claim in miniature.
+  Needs the announce moved or the claim qualified.
+- [ ] [BR-12] Pre-existing, recorded rather than fixed: `test_templates.sh:180` has no reverse
+  direction; the dogfood "one true evolve row" comment is false; `foreman-init/SKILL.md:172`
+  still names a `~/.claude/plugins/marketplaces/…` path.
+- [ ] [BR-13] `DEFERRED.md`'s reviewer-return-size-ratio check (spec §12.11, carried from the
+  2026-08-28 spec §15.4) is now answerable and due — phase A's ledger is complete, which was its
+  condition.
+
+### From the judge (gate 3) — caveats that outlive the branch
+
+- [ ] [JUDGE-1] **The abridging proxy hook is still live.** `foreman-phase` Step 4 item 4's
+  `git diff > file` produces a silently summarised review package under a `git`-rewriting hook;
+  250 lines were withheld across phase A's ten packages, worst on a trust-boundary task, and the
+  judge hit the same hook itself this session. Every future phase has this defect until the skill
+  changes. Needs Step 4's text to capture the diff through an invocation the proxy does not
+  rewrite, **and** to assert the artefact carries no truncation marker before dispatching. A
+  structural change to the harness: `/foreman-init` or a program decision, not a phase task.
+- [ ] [JUDGE-2] `evolve` mode's guarantee for `.claude/settings.json` is **unenforced and
+  untested**. Nothing mechanically consumes `MANIFEST.tsv` at all, so no code path can clobber a
+  contributor's settings — but by the same token nothing enforces the guarantee either, and it
+  rests solely on `foreman-init`'s prose. Needs a live `/foreman-init` into a scratch repository
+  that already has a `.claude/settings.json`, confirming the existing keys survive. Phase A was
+  forbidden to run it.
+- [ ] [JUDGE-3] Phase A's authorship and review-completeness claims are **not provable from the
+  repository alone**: every commit carries one git identity, so the controller's adopted commit
+  `fd90e51` is indistinguishable from an implementer's, and what the ten per-task reviewers
+  actually saw cannot be reconstructed. Recorded, not actionable in itself; the general fix is
+  that a harness which attributes work to tiers should record the tier in the commit trailer.
