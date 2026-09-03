@@ -10,13 +10,14 @@ Last updated 2026-09-03.
 
 Program layer merge: `docs/dev/specs/2026-09-02-program-layer-merge.md`, approved 2026-09-02.
 Six phases (A–F) in §10; F is deferred. Each phase runs under the *installed* plugin, so after
-a phase merges the plugin is updated before the next launches (§10, and `DEFERRED.md`).
+a phase merges the plugin is updated before the next launches (§10). Done for A on 2026-09-03:
+the plugin is installed from the GitHub source, version 0.1.0 at `f811034`.
 
 ## Phases
 
 | Phase | Owner | Branch | Status | Next action |
 |---|---|---|---|---|
-| prerequisites | yorah | feat/prerequisites | gates | gates 1–2 green (660/0, review `GO`); 3–7 pending — see **Next action** |
+| prerequisites | yorah | feat/prerequisites | merged | none — `HISTORY.md`; worktree removal pending (locked by the phase session) |
 
 One row per phase, edited in place as its status changes across the phase's lifetime — never
 appended to as a second row for the same phase. This table is parsed by
@@ -32,55 +33,40 @@ which is the same untruth as a ledger that says `in-progress` at a stop.
 
 ## Next action
 
-Phase A is mid-gate-chain, not awaiting launch. Its four tasks are `passed`, gate 1 is green at
-660/0, and gate 2 (whole-branch review) returned **`GO`** on the seventh dispatch after six
-server-side 529s — with two Important findings, both fixed on the branch before proceeding.
-Gates 3–7 are pending. Nothing has been pushed, no PR has been opened, `main` is untouched.
-
-Resume it: re-run `/foreman:phase docs/dev/program/phases/prerequisites/kickoff.md` at Opus, high.
-A resuming session skips Step 4 — all four tasks carry commit ranges and verdicts in the ledger
-head — and re-enters at gate 1 (cheap, and the gate chain wants the branch's own count anyway),
-then continues at **gate 3**; gate 2's verdict and findings are recorded in
-`docs/dev/program/phases/prerequisites/branch-review.md` and need not be re-run.
-
-**Gate 4 is blocking and carries a real load:** none of the twelve task Minors had reached
-`docs/dev/backlog.md` when the branch review ran, because gate 4 had never been reached. Twelve
-task Minors plus thirteen branch-review findings must be flushed there, tagged, before this phase
-can finish.
-
-When its summary comes back with a PR URL: probe the worktree at
-`<abs repo root>/.claude/worktrees/prerequisites` — plain `bash tests/run.sh` green, expected
-**660** (not 634; that figure predated the phase's actual assertion count, and `POLICY.md`'s
-`baseline-count` has been raised to 660 on the phase branch), and
-`git ls-files skills/foreman-init/templates/settings.local.json.tmpl` empty. Then merge the PR and
-run the two `DEFERRED.md` entries conditioned on that merge. Then write the phase B kickoff
-(§10: roots and layout, Opus).
-
-Carry into phase B, from phase A's report: `foreman-phase` Step 4 item 4 produces a **silently
-abridged** review package under a `git`-rewriting proxy hook — 250 lines were withheld across ten
-packages on phase A, worst on a trust boundary. The fix is a skill change (capture the diff
-through an invocation the proxy does not rewrite, and assert the artefact carries no truncation
-marker before dispatching), so it is `/foreman-init` or a program decision, not a phase task.
-Also `[T2-R1-M4]`: the suite can commit into a repository outside itself when `GIT_DIR` is set,
-reporting a nearly-clean run while doing it.
+**Specify and dispatch phase B, roots and layout** (spec §10 row B, §4 for the design). Under
+the current harness the program manager writes the plan: `superpowers:writing-plans`, into
+`docs/dev/plans/2026-09-03-roots-and-layout/`, then the kickoff at
+`docs/dev/program/phases/roots-and-layout/kickoff.md`, branch `feat/roots-and-layout`, Opus
+controller (it touches `scripts/lib.sh` and `MANIFEST.tsv`). Before writing, read §4.1–4.6 of
+the spec and the open rulings below; they fix B's scope. Housekeeping first: once the phase A
+terminal is closed, `git worktree remove .claude/worktrees/prerequisites`, `git branch -d
+feat/prerequisites`, `git push origin --delete feat/prerequisites`.
 
 ## Open rulings
 
 Rulings about the present. When one stops being about the present, move it to `RULINGS.md`.
 
-- Ruling: plugin installed 2026-09-02 from the local directory source (`claude plugin
-  marketplace add <checkout> --scope local`, then `claude plugin install foreman@foreman`) —
-  because that was the documented mechanism until phase A's `[DIST-1]` replaced it — costs, if
-  wrong, one re-registration after the merge, which `DEFERRED.md` already schedules.
-  **Superseded on the branch, not yet on `main`:** `[DIST-1]` has landed in
-  `feat/prerequisites`, so this repository's `CLAUDE.md`, its `.claude/settings.json` and
-  `settings.json.tmpl` now declare a `github` source on `yorah/foreman-harness`, and
-  `settings.local.json.tmpl` is retired. The installed plugin this session ran is still the
-  directory-sourced one; the re-registration `DEFERRED.md` schedules is what closes the gap, and
-  it is due after the merge, not before. Phase A did not install, remove or re-register anything
-  — that fence was held, and a reviewer confirmed the marketplace registration and the main
-  checkout's `.claude/settings.local.json` are both untouched.
-- Ruling: phase A's Step 1c baseline is taken with an environment prefix (kickoff, first
-  ruling) — because the tree is not what is red, the machine is, and phase A exists to make
-  that distinction unnecessary — costs, if wrong, a baseline count the ledger attributes to the
-  wrong cause; the plain run at task 2 corrects it either way.
+- Ruling: phase B absorbs `[DIST-2]` (every shipped slash command written namespaced,
+  `/foreman:phase` and so on, with an assertion that no bare form survives) — because B rewrites
+  the same skills, templates and `CLAUDE.md` for the layout change, and a second pass over them
+  would cost a reviewer round for nothing — costs, if wrong, a wider B diff.
+- Ruling: phase B absorbs `[JUDGE-1]` (the review package `foreman-phase` Step 4 item 4 writes
+  with `git diff > file` was silently abridged by a command-rewriting proxy hook on this machine,
+  250 lines withheld across phase A's ten packages). The fix is mechanised, not prose: a
+  `foreman-diff` wrapper script (`bin/` plus `scripts/`) that writes `<base>..<head>` to the
+  package path and exits 1 when the file carries a truncation marker or is shorter than
+  `git diff --stat` implies; the skill calls it by bare name like every other script, which no
+  hook on `git` rewrites — because a wrapper is the same immunity `bin/` already gives the other
+  scripts, and a prose instruction to "avoid the hook" cannot name the hook without naming a
+  vendor (spec §2) — costs, if wrong, one more script to maintain. The same proxy abridges the
+  program manager's own `git diff` reads; until B lands, read diffs with `/usr/bin/git`.
+- Ruling: phase B's verification includes spec §12.2 run for real (a single-mode `/foreman-init`
+  into a scratch repository that already has a `.claude/settings.json`), which also settles
+  `[JUDGE-2]` (the `evolve` guarantee is prose-only and untested) — because §12.2 is B's own
+  verification item and the scratch repository is the same one — costs nothing extra.
+- Ruling: `[BR-3]` (no assertion checks a *rendered* kickoff, only the template) goes into B if
+  B changes `kickoff.md.tmpl`, otherwise into C, which replaces the kickoff wholesale (§5.1) —
+  because the assertion should be written against the shape that survives.
+- Ruling: the remaining 20 backlog items from phase A (`[T1-M4]`…`[BR-13]`, `[JUDGE-3]`) stay
+  in the backlog; phase B's plan absorbs only those that touch a file B already changes —
+  because a Minor is not a phase.

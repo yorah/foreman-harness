@@ -29,20 +29,17 @@ Run in this order. All must be green before a phase may merge.
 
 baseline-count: 660
 
-Green at `e8dc48e`, recorded 2026-09-03 — a `feat/prerequisites` commit, not that branch's head,
-which has moved since and moves again with every ledger commit. `660 passed, 0 failed`, exit 0,
-plain `bash tests/run.sh`, observed by the phase controller there and re-verified at each later
-head. The authoritative attribution is the merge commit, and `DEFERRED.md` schedules exactly that
-re-attribution against a run on the merged `main`; treat this SHA as provisional until then. A task
-report whose test count falls below this is rejected before a reviewer is spawned. Raise it when a
-phase merges; never lower it without a ruling that says why.
+Green at `f811034`, the phase A merge commit, recorded 2026-09-03: `660 passed, 0 failed`, exit
+0, plain `bash tests/run.sh` on the merged `main`, observed by the program manager after the
+merge (the run that `DEFERRED.md` scheduled). A task report whose test count falls below this is
+rejected before a reviewer is spawned. Raise it when a phase merges; never lower it without a
+ruling that says why.
 
-Raised from `610` (green at `de22a66`, 2026-08-31) by phase A, `prerequisites`, which added fifty
-net assertions across four tasks. Recorded on the phase branch rather than on the default branch,
-so it lands with the merge and never claims a count the default branch cannot meet — `main` still
-measures 610 until then. Written by the phase session on the operator's explicit instruction,
-which is the one thing this file's own opening paragraph otherwise forbids; the phase's ledger
-records that provenance.
+Raised from `610` (green at `de22a66`, 2026-08-31) by phase A, `prerequisites`, fifty net
+assertions across four tasks. The raise itself was written on the phase branch by the phase
+session, on the operator's explicit instruction, which is the one thing this file's opening
+paragraph otherwise forbids; the phase ledger records that provenance, and the attribution above
+is the program manager's.
 
 ## Trust boundaries
 
