@@ -6,7 +6,7 @@ baseline: 610 at cc489e9a0f0be85829ba288cf089ba28037fdcbb
 tasks:
   - {n: 1, model: opus, effort: high, status: passed, commits: "13dce8e..0c6f90d", verdict: "Spec ✅ / Quality Approved", minors: [T1-M4, T1-M5]}
   - {n: 2, model: sonnet, effort: medium, status: passed, commits: "8273545..57f5323", verdict: "Spec ✅ / Quality Approved", minors: [T2-R1-M1, T2-R1-M2, T2-R1-M3, T2-R1-M4]}
-  - {n: 3, model: sonnet, effort: medium, status: in-progress, commits: "", verdict: "", minors: []}
+  - {n: 3, model: sonnet, effort: medium, status: passed, commits: "a03a298..e50992b", verdict: "Spec ✅ / Quality Approved", minors: [T3-M14, T3-M15]}
   - {n: 4, model: opus, effort: high, status: pending, commits: "", verdict: "", minors: []}
 ---
 
@@ -204,3 +204,92 @@ No other deviation; the test block and the `run.sh` insertion are verbatim from 
 (rather than constructed) hostile signing config on this machine; and a real WSL foreign-uid
 dubious-ownership path, as opposed to the `GIT_TEST_ASSUME_DIFFERENT_OWNER=1` simulation used
 to verify it.
+
+### Task 3 — `[DEP-1]` dependency check at skill entry
+
+**Status** passed, after **three fix rounds** — the only task in this phase to need more than one.
+**Commits** `a03a298..e50992b` (`07d0fd1` implementation, then `bd02151`, `62ceed9`, `e50992b`).
+**Model and effort actually used** implementer Sonnet/medium throughout, including all three fix
+rounds (rounds 1–3 resume the same implementer by message, so no escalation was reached);
+reviewer Opus/high on all four passes, per `POLICY.md`'s rule that any skill or template takes an
+Opus reviewer regardless of who implemented it. **Verdict** Spec ✅ / Quality Approved (round 3).
+
+That rule earned its keep here. Every finding that mattered in this task was a **cross-file
+semantic contradiction, invisible from inside the file being read** — which is exactly the
+measured reason `POLICY.md` gives for the Opus-reviewer override.
+
+**Gate, as the controller observed it.** 640/0 (delta +30) → 646/0 (+36) → 654/0 (+44) → 654/0
+(+44, relabelling round). `foreman-baseline` pass at each. Invariants 5 and 8 also checked
+directly by the controller: no `TODO`/`TBD`/`FIXME` under `skills/`, `agents/`, `commands/`, and
+the only >100-column lines in the edited skills are frontmatter `description:` scalars, which
+invariant 8 exempts.
+
+**The `[T3-M5]` class — "what a phase does first".** Task 3 added a Step 0 check, which silently
+falsified every other file's claim that a phase begins at Step 1a. Three separate instances
+surfaced across three rounds: the kickoff template's header (`[T3-M1]`), `foreman-program`'s own
+instruction to the PM plus a false test label (`[T3-M5]`), and a last `tests/test_templates.sh`
+label calling `EnterWorktree` the "first action" (`[T3-M11]`). Patching instances one at a time
+lost to it twice before the class was swept.
+
+**The `[T3-M4]` fallback guard — the substantive finding of this phase.** Round 1's review
+returned the phase's only **Not approved**, on an Important: the guard meant to protect the
+`[DEP-1]` ruling failed in *both* directions — it missed a real fallback and false-redded on
+compliant prose. Round 2 fixed the false positives but not detection, and round 2's review
+returned Not approved again, this time for a disclosure failure rather than a detection failure.
+
+Ruling: mechanical detection of "a fallback was added" is **declared closed as impossible**, and
+the guard rests as a tripwire against known drift shapes with its limit disclosed in the test
+comment, the assertion label and `backlog.md`. — Substring matching is polarity-blind: the same
+vocabulary marks a fallback, a prohibition of one, and a compliant stop. Both directions were
+proved rather than argued. The reviewer pasted `references/gate-chain.md:64`'s own compliant
+sentence into Step 0 and reddened the suite; the controller injected four plainly-worded
+fallbacks ("continue without it and apply the equivalent steps", "degrade gracefully",
+"improvise a substitute", "best-effort attempt … instead of halting") and all four left the suite
+at 654/0. Widening the markers only trades false negatives for false positives, and those false
+positives push a future editor to delete the prose that reinforces the ruling — worse than no
+guard. — Costs if wrong: the rule is enforced by review rather than mechanically, so a
+differently-worded fallback can land and only a reviewer will catch it. This is recorded in three
+durable places so no one mistakes the tripwire for a detector.
+
+Ruling: rounds 3 was spent on disclosure, not on a fourth detection attempt. — The reviewer
+scoped the remedy at roughly six lines (relabel, one comment sentence, one backlog line) and
+called it convergent, against a detection target it had just proved unachievable; rounds 4 and 5
+would have ended at the loop's breaker with the same residual. — Costs if wrong: one round spent
+on wording. Verified after the fact: the compliant prohibition that used to false-red is now
+green, a compliant stop is green, and a tuned phrasing still reddens at 653/1, so the tripwire
+still guards its known shapes.
+
+Ruling: the closed-world alternative — a snapshot pin or word budget over the guarded range, which
+would give zero false negatives within invariant 1 — is **recorded, not implemented** (`[T3-M13]`).
+— It changes the question from "is this a fallback" to "has this range changed at all", reddening
+on every legitimate edit; that trade belongs to a phase that can weigh it, not to a fix round. —
+Costs if wrong: a future phase re-derives the option from the backlog note.
+
+**Open Minors, deferred to `backlog.md` at gate 4:**
+
+- `[T3-M14]` The backlog's range sentence overstates the program-side range — Step 0 body versus
+  the `### Dependencies` subsection.
+- `[T3-M15]` `[T3-M12]` de-italicised the positive needles only, so an *italicised* reintroduction
+  of the wrong primacy claim still passes green. The `[T3-M5]` class therefore remains partly
+  unguarded against one formatting variant.
+
+**Declared deviation, judged.** The brief's Step 1 test needle was lowercase-initial while its own
+Step 3 implementation text opened the sentence capitalised, and `assert_contains` is a
+case-sensitive literal match — so the brief contradicted itself and the implementer had to choose.
+It kept the test's literal string and rephrased so the prohibition is not sentence-initial,
+preserving meaning and emphasis. Accepted, and the reasoning was right: the gate is the authority
+the invariants point to. The brittleness that forced the choice was then removed in round 1 as
+`[T3-M3]`, so the next editor is not trapped by it. A helper gap was identified in passing and is
+not a defect in this task: `flow()` takes a filename and does not lowercase, so it cannot serve an
+extracted range.
+
+**Assertion integrity.** The relabelling round left the count level at 654, which is consistent
+with pure relabelling but equally with an assertion being swapped to keep the number flat. The
+reviewer confirmed the honest reading — identical primitive counts per file, `comm -3` over label
+sets showing relabels only, each changed needle mutation-proved live. Nothing was weakened or
+removed.
+
+**Uncovered.** A live session actually stopping on a missing plugin — the behaviour `[DEP-1]`
+exists to produce — cannot be verified from a diff, and was not verified in this phase. Nor was
+the `plugin:skill` naming of a session's visible skill list, nor marker collisions with compliant
+sentences not yet written.
