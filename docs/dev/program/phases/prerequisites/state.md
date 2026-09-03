@@ -5,7 +5,7 @@ branch: feat/prerequisites
 baseline: 610 at cc489e9a0f0be85829ba288cf089ba28037fdcbb
 tasks:
   - {n: 1, model: opus, effort: high, status: passed, commits: "13dce8e..0c6f90d", verdict: "Spec ✅ / Quality Approved", minors: [T1-M4, T1-M5]}
-  - {n: 2, model: sonnet, effort: medium, status: in-progress, commits: "", verdict: "", minors: []}
+  - {n: 2, model: sonnet, effort: medium, status: passed, commits: "8273545..57f5323", verdict: "Spec ✅ / Quality Approved", minors: [T2-R1-M1, T2-R1-M2, T2-R1-M3, T2-R1-M4]}
   - {n: 3, model: sonnet, effort: medium, status: pending, commits: "", verdict: "", minors: []}
   - {n: 4, model: opus, effort: high, status: pending, commits: "", verdict: "", minors: []}
 ---
@@ -125,3 +125,82 @@ than a `mise` shim: the fix removes the `HOME` dependency entirely, so the mecha
 machine-independent, but only the mise case was observed here. And Claude Code's own resolution
 of edge-value `CLAUDE_CONFIG_DIR`. Both belong in the phase report, not in the backlog — they are
 limits of observation, not defects.
+
+### Task 2 — the runner pins git configuration
+
+**Status** passed. **Commits** `8273545..57f5323` (`56eeb89` implementation, `57f5323` fix round
+1). **Model and effort actually used** implementer Sonnet/medium, reviewer Opus/high — the plan's
+table, and `POLICY.md`'s model rule that the runner scoring every other test takes an Opus
+reviewer. **Verdict** Spec ✅ / Quality Approved (round 1).
+
+**Gate, as the controller observed it.** First pass: plain 625/0, `foreman-baseline --count 625`
+→ pass, delta +15. After fix round 1, three environments, each **628 passed, 0 failed**:
+
+| Environment | Before the round | After |
+|---|---|---|
+| plain `bash tests/run.sh` | 625/0 | 628/0 |
+| hostile `GIT_CONFIG_GLOBAL` (signing mandatory, key absent) | 625/0 | 628/0 |
+| env-injected signing via `GIT_CONFIG_COUNT` — the `[T2-M1]` hole | 612/13 | 628/0 |
+
+`foreman-baseline --count 628` → pass, delta +18. Each hostile environment was probed before its
+green run was believed: a bare `git commit` fails under both, so neither green is vacuous. This
+is the signing half of spec §12.1 item 1, demonstrated rather than asserted — and note it had to
+be *constructed*, because the 12 failures the plan predicts do not occur ambiently on this
+machine.
+
+Ruling: the 12 failures task 2 removes do not reproduce ambiently here, so the task was required
+to construct the hostile condition deliberately and show the failures present without the fix and
+absent with it, rather than record the fix as undemonstrable. — A fix nobody can see working is
+indistinguishable from no fix, and this one guards a condition every future contributor may hit.
+— Costs if wrong: effort spent building a harness for a failure mode that never occurs in the
+wild; cheap, and the constructed check is reusable.
+
+**Findings.** Round 0 raised four Minors, all closed in round 1 and each verified by the reviewer
+through an independent mutation on a scratchpad copy rather than by reading the diff. Of these
+the substantive one was `[T2-M1]`: the pin covered the global config *file* only, so
+`GIT_CONFIG_PARAMETERS`/`GIT_CONFIG_COUNT` overrode it — 612 passed, 13 failed with the fix
+nominally in place — and the comment in `run.sh` overclaimed the guarantee. Both mechanism and
+comment were corrected.
+
+Ruling: the runner pins `safe.directory=*`. — `[T2-M4]` asked whether discarding the operator's
+global `safe.directory` could break a working checkout; on WSL, repositories on Windows-mounted
+filesystems routinely need it. The reviewer verified the pin behaviourally with
+`GIT_TEST_ASSUME_DIFFERENT_OWNER=1`: usable under the runner, `fatal: detected dubious ownership`
+without it. It is a hard-coded literal, so it smuggles in no operator configuration. — Costs if
+wrong: the suite tolerates an ownership condition a contributor's real git would reject, which
+is the safe direction for a test runner and the wrong direction for a shipped script — this pin
+is confined to `tests/run.sh`.
+
+Ruling: the plan's predicted 12 failures and the implementer's observed 13 are both correct and
+neither is a defect. — They count different sets: 13 is the 12 pre-existing `test_phase_state.sh`
+assertions the plan names plus the one new isolation assertion this task adds, which the plan's
+own Step 5 names separately. — Costs if wrong: nothing; the reviewer reproduced the split
+independently.
+
+**Open Minors, deferred to `backlog.md` at gate 4:**
+
+- `[T2-R1-M1]` The `GIT_CONFIG_COUNT` half of the unset has no assertion — dropping it still
+  leaves 628/0, so that half of the isolation is unguarded against future regression.
+- `[T2-R1-M2]` The new `GIT_CONFIG_PARAMETERS` assertion re-creates the opacity `[T2-M3]` was
+  raised about.
+- `[T2-R1-M3]` The comment's phrase "file-based config resolution" still sweeps in local and
+  worktree scope, which the pin does not govern.
+- `[T2-R1-M4]` **`GIT_DIR` residual — the largest thing this phase found and did not fix.** The
+  reviewer reproduced the suite committing five branches into a victim repository while
+  reporting 624 passed, 4 failed. It is pre-existing and outside task 2's brief, so it was
+  correctly not fixed here, but it means the suite can write into a repository outside itself
+  when `GIT_DIR` is set in the environment, and report a nearly-clean run while doing it. It
+  should not sit in the backlog at the same weight as a comment nit; flagged to the program
+  manager in the phase report.
+
+**Declared deviations, judged.** The brief's Step 4 predicted `618 passed, 0 failed`, computed
+from a pre-task-1 baseline of 616; task 1 actually landed at 623, so the brief's absolute
+arithmetic was stale while its `+2` delta was exact. Accepted — the brief was generated before
+task 1's fix round existed, `foreman-baseline` checks `POLICY.md`'s recorded baseline rather than
+a brief's guess, and the implementer flagged it rather than quietly matching the stale number.
+No other deviation; the test block and the `run.sh` insertion are verbatim from the brief.
+
+**Uncovered.** Suite behaviour under a hook-injected relative `GIT_INDEX_FILE`; an ambient
+(rather than constructed) hostile signing config on this machine; and a real WSL foreign-uid
+dubious-ownership path, as opposed to the `GIT_TEST_ASSUME_DIFFERENT_OWNER=1` simulation used
+to verify it.
