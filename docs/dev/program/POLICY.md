@@ -29,8 +29,11 @@ Run in this order. All must be green before a phase may merge.
 
 baseline-count: 660
 
-Green at `e8dc48e`, recorded 2026-09-03 — the `feat/prerequisites` head, observed by the phase
-controller as `14 files, 660 passed, 0 failed`, exit 0, from a plain `bash tests/run.sh`. A task
+Green at `e8dc48e`, recorded 2026-09-03 — a `feat/prerequisites` commit, not that branch's head,
+which has moved since and moves again with every ledger commit. `660 passed, 0 failed`, exit 0,
+plain `bash tests/run.sh`, observed by the phase controller there and re-verified at each later
+head. The authoritative attribution is the merge commit, and `DEFERRED.md` schedules exactly that
+re-attribution against a run on the merged `main`; treat this SHA as provisional until then. A task
 report whose test count falls below this is rejected before a reviewer is spawned. Raise it when a
 phase merges; never lower it without a ruling that says why.
 

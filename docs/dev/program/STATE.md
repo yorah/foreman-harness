@@ -16,7 +16,7 @@ a phase merges the plugin is updated before the next launches (§10, and `DEFERR
 
 | Phase | Owner | Branch | Status | Next action |
 |---|---|---|---|---|
-| prerequisites | yorah | feat/prerequisites | gates | tasks passed, gate 1 green at 660/0; gate 2 unreached (529s) — resume per **Next action** |
+| prerequisites | yorah | feat/prerequisites | gates | gates 1–2 green (660/0, review `GO`); 3–7 pending — see **Next action** |
 
 One row per phase, edited in place as its status changes across the phase's lifetime — never
 appended to as a second row for the same phase. This table is parsed by
@@ -32,13 +32,21 @@ which is the same untruth as a ledger that says `in-progress` at a stop.
 
 ## Next action
 
-Phase A is mid-gate-chain, not awaiting launch. Its four tasks are `passed` and gate 1 is green;
-gate 2 (whole-branch review, Opus, always) never ran — five consecutive server-side 529s. Nothing
-was pushed, no PR was opened, `main` is untouched.
+Phase A is mid-gate-chain, not awaiting launch. Its four tasks are `passed`, gate 1 is green at
+660/0, and gate 2 (whole-branch review) returned **`GO`** on the seventh dispatch after six
+server-side 529s — with two Important findings, both fixed on the branch before proceeding.
+Gates 3–7 are pending. Nothing has been pushed, no PR has been opened, `main` is untouched.
 
 Resume it: re-run `/foreman:phase docs/dev/program/phases/prerequisites/kickoff.md` at Opus, high.
 A resuming session skips Step 4 — all four tasks carry commit ranges and verdicts in the ledger
-head — and re-enters at gate 1, then gate 2 against the existing raw `branch-review.diff`.
+head — and re-enters at gate 1 (cheap, and the gate chain wants the branch's own count anyway),
+then continues at **gate 3**; gate 2's verdict and findings are recorded in
+`docs/dev/program/phases/prerequisites/branch-review.md` and need not be re-run.
+
+**Gate 4 is blocking and carries a real load:** none of the twelve task Minors had reached
+`docs/dev/backlog.md` when the branch review ran, because gate 4 had never been reached. Twelve
+task Minors plus thirteen branch-review findings must be flushed there, tagged, before this phase
+can finish.
 
 When its summary comes back with a PR URL: probe the worktree at
 `<abs repo root>/.claude/worktrees/prerequisites` — plain `bash tests/run.sh` green, expected

@@ -1,11 +1,18 @@
 # Prerequisites (phase A of the program layer merge)
 
-## First — `foreman-phase` Step 1a, then Step 1b's `EnterWorktree`
+## First — `foreman-phase` Step 0, then Step 1a, then Step 1b's `EnterWorktree`
 
-Record `<main-checkout>` (the directory `/phase` was invoked from — `git rev-parse
+**Step 0 is the dependency check, and it comes before everything below.** This kickoff was
+written before phase A task 3 added that step, and said Step 1a came first; a resuming session
+following the old wording would route straight past the `[DEP-1]` check that stops cleanly when a
+required plugin is absent. Corrected on 2026-09-03 after the whole-branch review caught it
+(`[BR-1]`) — the same "what a phase does first" class the phase fixed three times in shipped
+files and missed here, in its own kickoff.
+
+Then record `<main-checkout>` (the directory `/phase` was invoked from — `git rev-parse
 --show-toplevel`, not a worktree) and `<default>` (the default branch, `main`) before doing
-anything else — they are needed at gate 6 and are hard to reconstruct once inside a worktree.
-Then:
+anything else in Step 1 — they are needed at gate 6 and are hard to reconstruct once inside a
+worktree. Then:
 
 `EnterWorktree(name: "prerequisites")` — branches from `origin/main`.
 

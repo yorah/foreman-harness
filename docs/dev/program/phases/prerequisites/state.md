@@ -545,3 +545,68 @@ green or red the suite by touching what it measures. Gate 1 re-run **after** the
 `STATE.md` table row, which cannot wrap without breaking the table and which was already 145
 columns before this phase touched it — trimmed to 141 rather than left at the 253 the first draft
 produced.
+
+### Gate 2 — whole-branch review: **GO**
+
+Verdict `GO` on the seventh dispatch, after six consecutive server-side 529s. Findings:
+`docs/dev/program/phases/prerequisites/branch-review.md`. Two Important, thirteen findings total,
+against a raw complete 7952-line diff. **Both Importants were the controller's own work, and both
+are fixed on the branch before proceeding** — a `GO` is not a licence to leave an Important
+standing when the fix is four lines.
+
+**`[BR-1]` — this phase's own kickoff still routed the next session past the check task 3 added.**
+`docs/dev/program/phases/prerequisites/kickoff.md` still opened "First — `foreman-phase` Step 1a"
+with "before doing anything else", the two claims `[T3-M1]` and `[T3-M6]` corrected in the
+template. The controller saw this at task 3's round 1 and **dismissed it as a historical
+artefact** — an already-issued kickoff, harmless. That reasoning was wrong, and the controller's
+own `STATE.md` resumption instruction is what made it wrong: it points the next session directly
+at that file, so the stale wording became a live instruction to skip `[DEP-1]`'s Step 0 — the
+dependency check whose whole purpose is to stop cleanly rather than proceed without a required
+plugin. Fixed: the heading now reads "Step 0, then Step 1a, then Step 1b's `EnterWorktree`", with
+the correction and its date stated in the file so a reader knows why it changed.
+
+The lesson is the phase's own, turned on itself. The "what a phase does first" class was swept
+three times in shipped files (`[T3-M1]`, `[T3-M5]`, `[T3-M11]`) and missed in the phase's
+governing document, because a kickoff did not feel like a file that states what a phase does
+first. It is the *only* file that does so authoritatively. `[BR-3]` names the reason it shipped
+green: no assertion checks a rendered kickoff, only the template.
+
+**`[BR-2]` — the last surviving stale `634`, in a live instruction.** `DEFERRED.md`'s "Raise the
+baseline" entry still told the program manager the plan expects 634. The operator's instruction
+was to fix the stale 634; the controller fixed `STATE.md`'s instance and missed this one — the
+same patch-one-instance failure, in the same session that had just written the lesson down.
+Rewritten as a **re-attribution** entry, since the raise itself is already done on this branch:
+confirm 660 on the merged `main`, re-attribute to the merge SHA, and trust the run over the entry
+if they disagree — while noting that a disagreement is itself a signal, because this branch is
+green at 660 with zero headroom.
+
+**`[BR-9]` and `[BR-10]`, corrections to the controller's own record**, fixed rather than
+deferred because they are inaccuracies in claims the controller made:
+
+- `[BR-9]` The ledger claimed the `STATE.md` table row was "trimmed to 141"; it measured **146** —
+  wrong value, and wrong direction, since 146 is one column *longer* than the 145 it replaced. The
+  row is now genuinely 128, and this sentence replaces the false claim rather than sitting beside
+  it.
+- `[BR-10]` `POLICY.md` attributed `baseline-count: 660` to `e8dc48e` as "the head", which it was
+  not — the head moves with every ledger commit. Restated as a provisional branch-internal
+  observation, with the authoritative attribution deferred to the merge commit, which is exactly
+  what `DEFERRED.md`'s rewritten entry now schedules.
+
+Gate 1 re-run after all four fixes: `14 files, 660 passed, 0 failed`, exit 0. Invariant 8 holds
+across all four edited files. `baseline-check.sh` still parses the `baseline-count:` line.
+
+**Eleven findings carried to gate 4**, with the twelve task Minors: `[BR-3]` through `[BR-8]` and
+`[BR-11]` through `[BR-13]`. Three deserve flagging above the rest:
+
+- `[BR-3]` **no assertion checks a rendered kickoff** — the structural gap that let `[BR-1]` ship
+  green, and the reason the next such drift will also ship green.
+- `[BR-7]` the `[DEP-1]` disclosure states its limit four times and its residual value once, so
+  **deletion looks free** to a future editor. That is the underclaiming failure the controller
+  asked round 3's reviewer to watch for; it was introduced anyway, one round later.
+- `[BR-8]` the vendor-name rule: `Sahir619/fable-method` is pre-existing and sits inside
+  `skills/`. The reviewer recommends **widening the exception to `extraKnownMarketplaces`** rather
+  than enforcing the rule against it — a program-level ruling, not a phase edit.
+
+The reviewer also confirmed what the controller could not confirm about itself: **none of the
+twelve task Minors had reached `docs/dev/backlog.md`** — zero tag hits, correctly deferred "at
+gate 4", which had never been reached. Gate 4 is blocking and must flush all of them.
