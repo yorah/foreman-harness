@@ -701,3 +701,40 @@ tag:
   `foreman-phase` Step 4 changes.
 
 Gate 1 re-run after the flush: `14 files, 660 passed, 0 failed`, exit 0.
+
+### Gate 5 — context distillation: **passed** (blocking)
+
+Written to `docs/dev/CONTEXT.md` under "Phase A (`prerequisites`) — 2026-09-03", in two parts.
+
+**The reviewer return-size ratio, measured — closing a check carried since 2026-08-28.** Spec
+§12.11 (from the 2026-08-28 spec §15.4) asked for it during the first phase of this program, and
+`DEFERRED.md` conditioned it on this ledger being complete. Measured: **317,565 bytes** of
+findings files across eleven reviews and the judge, against roughly **12 KB** of return blocks —
+an aggregate ratio of about **1:26**, the controller absorbing under 4% of what the reviewers
+wrote. Recorded honestly as an order of magnitude: the file sizes are exact, the return sizes are
+counted from the session transcript and include harness framing. The verdicts-only contract holds
+by a wide margin, and the qualitative finding matters as much as the number — what the controller
+actually needed from a reviewer, every time, was a verdict plus a *path*; every ruling in this
+ledger was written from a verdict line plus a targeted read of one section of one findings file.
+`DEFERRED.md`'s entry is now checked off with the result, rather than left open for a third phase
+to rediscover.
+
+**Seven durable lessons**, each stated with the evidence that produced it rather than as advice:
+polarity-blindness making a prose rule mechanically unenforceable; a guard's label outrunning the
+guard, and its mirror image where a disclosure makes deletion look free; adding a step to a skill
+falsifying every other file's claim about what comes first, including the kickoff nobody thought
+of as making that claim; verifying a hostile environment is hostile before believing a green run
+under it; a token-reducing proxy silently abridging redirected `git` output; assertions that pass
+vacuously, including one shipped inside a brief; briefs whose absolute counts go stale while
+their deltas stay exact; and how to recover a dispatch that dies mid-work.
+
+Gate 1 re-run after the writes: `14 files, 660 passed, 0 failed`, exit 0. Invariant 8 clean in
+both edited files.
+
+Nothing here is promoted to `docs/dev/program/RULINGS.md`. The phase's rulings are either
+task-local (the fix-loop exit condition, the gate-1 prefix) or already recorded where they bind —
+`[DEP-1]`'s enforced-by-review limit lives in `backlog.md` and in the test comments themselves,
+which is closer to the point of use than a program-level rulings file. The one candidate for
+promotion is `[BR-8]`'s question — whether the vendor-name rule should carry an
+`extraKnownMarketplaces` exception — and that is the program manager's ruling to make, not this
+phase's; it is in the backlog awaiting them.
